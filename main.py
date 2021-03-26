@@ -17,8 +17,7 @@ class simulation(Forest.Fire_model, Forest.Agent_model):
         self.delta_beta = 1
         self.timesteps = 5
         super().__init__(self.rows, self.columns, initmode)
-        
-#        
+                
 scenario = simulation('centrum') # init random or centrum
 scenario.plot()
 for i in range(0, scenario.timesteps):
