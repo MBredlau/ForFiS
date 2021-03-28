@@ -64,6 +64,7 @@ class Fire_model(Forest):
             
     def __init__(self, rows, columns, initmode):
         super().__init__(rows, columns, initmode)
+        self.prob_transit = np.zeros((rows, columns))
         
     def transition(self):
         self.forest_new[:] = self.forest[:]
@@ -71,28 +72,17 @@ class Fire_model(Forest):
             #print(self.forest)
             for column in range(0,self.columns):
                 if self.forest[row, column, 0] == 1: # healthy
-                    self.transit_healthy(row, column)
+                    fire_neighbors = self.get_number_neighbors_on_fire(row, column)
+                    self.prob_transit[row, column] += 1 - self.likelihood ** fire_neighbors
+                    #self.transit_healthy(row, column)
                 if self.forest[row, column, 0] == 2: # on fire
-                    self.transit_fire(row, column)
+                    self.prob_transit[row, column] += self.beta - self.forest[row, column, 1] * self.delta_beta
+                    #self.transit_fire(row, column)
+                prob = random.randint(0,100)
+                if (self.prob_transit[row, column] * 100) > prob:
+                    self.forest_new[row, column, 0] += 1
+                    self.prob_transit[row, column] = 0
         self.forest[:] = self.forest_new[:]
-        
-    def transit_healthy(self, row, column):
-        #print(row, column)#, self.get_number_neighbors_on_fire(row, column))
-        fire_neighbors = self.get_number_neighbors_on_fire(row, column)
-        if fire_neighbors:
-            prob_healthy = 1 - self.likelihood ** fire_neighbors
-        else:
-            prob_healthy = 1
-        
-        if (prob_healthy * 100) < random.randint(0,100):
-            self.forest_new[row, column] = 2
-        
-    def transit_fire(self, row, column):
-        prob_fire = self.beta - self.forest[row, column, 1] * self.delta_beta
-        if prob_fire:
-            self.forest_new[row, column, 0] = 2
-        else:
-            self.forest_new[row, column, 0] = 3
         
     def get_number_neighbors_on_fire(self, row, column):
         if column == 0 and row == 0:  
@@ -120,6 +110,6 @@ class Agent_model():
         super().__init__(rows, columns, initmode)
         
     def act(self):
-        print('nichts')
+        pass
         
 
