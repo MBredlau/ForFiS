@@ -33,7 +33,7 @@ class Forest():
     def init_centrum(self, rows, columns):
         for i in range(0,rows):
             for j in range(0,columns):
-                if i == rows / 2 and j == columns / 2:
+                if (i == rows / 2 and j == columns / 2) or (i == (rows - 1) / 2 and j == (columns - 1) / 2):
                     self.forest[i, j, 0] = 2
                 else: 
                     self.forest[i, j, 0] = 1
@@ -53,6 +53,7 @@ class Forest():
             self.init_random(rows, columns)
             
     def plot(self):
+        plt.clf()
         cmap = colors.ListedColormap(['green', 'red', 'black'])
         bounds=[0.9,1.9,2.9,4]
         norm = colors.BoundaryNorm(bounds, cmap.N)
