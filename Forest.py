@@ -51,7 +51,7 @@ class Forest():
             self.init_centrum(rows, columns)
         else: # default
             self.init_random(rows, columns)
-            #test
+           
     def plot(self):
         plt.clf()
         cmap = colors.ListedColormap(['green', 'red', 'black'])
