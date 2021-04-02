@@ -35,7 +35,7 @@ def start_simulation():
         scenario.act()
 
 #plt.figure(clear=True)
-
+#test
 fenster = tk.Tk()
 fenster.title("Nur ein Fenster")
 start_button = tk.Button(fenster, text="Start", command=start_simulation)
