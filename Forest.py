@@ -68,12 +68,12 @@ class Forest():
             self.init_random(rows, columns)
            
     def plot(self):
-        self.a.clear()
+        #self.a.clear()
         cmap = colors.ListedColormap(['green', 'red', 'black'])
         bounds=[0.9,1.9,2.9,4]
         norm = colors.BoundaryNorm(bounds, cmap.N)
         self.a.imshow(self.forest[:,:], interpolation='nearest', cmap=cmap, norm=norm) # origin = 'higher'
-        #self.fig.show()
+        self.fig.canvas.draw()
          
 # Fire model calculates the new fire distribution on the forest for each timestep
 class Fire_model(Forest):
