@@ -19,49 +19,86 @@ import tkinter as tk
         
     
 class simulation(Forest.Fire_model, Forest.Agent_model):
-    def __init__(self, fig, a):
+    def __init__(self, GUI):
         self.columns = 21
         self.rows = 21
-        likelihood_to_ignite = 3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
+        likelihood_to_ignite = GUI.alpha_regler.get() #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
         self.likelihood = 1 - likelihood_to_ignite * 0.1 # higher likelihood leads to a lower probability to ignite the trees
-        fire_agression = 4 # indicator [0, 10]. higher value leads to a faster burning down
-        self.beta = (10 - fire_agression) * 0.1
+        fire_agression = GUI.beta_regler.get() # indicator [0, 10]. higher value leads to a faster burning down
+        self.beta = fire_agression * 0.1#(10 - fire_agression) * 0.1
         self.delta_beta = 0.5 # efficiency of extinguishing action
-        self.timesteps = 15
+        self.timesteps = GUI.timesteps_regler.get()
         self.delta_time = 0.5
-        self.fig = fig
-        self.a = a
+        self.fig = GUI.fig
+        self.a = GUI.a
         fire_source = 'centrum' # init random or centrum
         super().__init__(self.rows, self.columns, fire_source)
                 
-def start_simulation():
-    scenario = simulation(fig, a)
-    scenario.plot()
-    for i in range(0, scenario.timesteps):
-        time.sleep(scenario.delta_time)
-        scenario.transition()
+
+class GUi():
+
+    def __init__(self):    
+        
+        self.fig = plt.figure()
+        self.a = self.fig.add_subplot(111)
+        self.fenster = tk.Tk()
+        self.fenster.title("Forest Fire Simulation")
+        self.top_frame = tk.Frame(self.fenster)
+        self.top_frame.pack()
+        self.left_frame = tk.Frame(self.top_frame)
+        self.left_frame.pack(side=tk.LEFT)
+        self.frame2 = tk.Frame(self.top_frame)
+        self.frame2.pack(side = tk.LEFT)
+        self.frame3 = tk.Frame(self.top_frame)
+        self.frame3.pack(side = tk.RIGHT)
+        
+        self.bottom_frame = tk.Frame(self.fenster)
+        self.bottom_frame.pack(side=tk.BOTTOM)
+
+        
+        self.alpha_regler = tk.Scale(self.left_frame, from_=0, to=10, orient=tk.HORIZONTAL)
+        self.alpha_regler.set(3)
+        self.alpha_regler.pack()
+        self.alpha_label = tk.Label(self.left_frame, text="Ignition Likelihood")
+        self.alpha_label.pack()
+        
+        self.beta_regler = tk.Scale(self.frame2, from_=0, to=10, orient=tk.HORIZONTAL)
+        self.beta_regler.set(4)
+        self.beta_regler.pack()
+        self.beta_label = tk.Label(self.frame2, text="Fire Agression")
+        self.beta_label.pack()
+        
+        self.timesteps_regler = tk.Scale(self.frame3, from_=0, to=20, orient=tk.HORIZONTAL)
+        self.timesteps_regler.set(15)
+        self.timesteps_regler.pack()
+        self.timesteps_label = tk.Label(self.frame3, text="Timesteps")
+        self.timesteps_label.pack()
+        
+        scenario = simulation(self)
+        self.canvas = FigureCanvasTkAgg(scenario.fig, master=self.bottom_frame)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.bottom_frame)
+        self.toolbar.update()
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        
+        self.start_button = tk.Button(self.bottom_frame, text="Start", command=self.start_simulation)
+        self.start_button.pack()
+        
+        self.fenster.mainloop()
+
+    def start_simulation(self):
+        scenario = simulation(self)
         scenario.plot()
-        scenario.act()
+        for i in range(0, scenario.timesteps):
+            time.sleep(scenario.delta_time)
+            scenario.transition()
+            scenario.plot()
+            scenario.act()
 
-fig = plt.figure()
-a = fig.add_subplot(111)
 
-scenario = simulation(fig, a)
-fenster = tk.Tk()
-fenster.title("Forest Fire Simulation")
-
-canvas = FigureCanvasTkAgg(scenario.fig, master=fenster)
-canvas.draw()
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-toolbar = NavigationToolbar2Tk(canvas, fenster)
-toolbar.update()
-canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-
-start_button = tk.Button(fenster, text="Start", command=start_simulation)
-start_button.pack()
-
-fenster.mainloop()
+GUI = GUi()
 
 hex_centers, _ = hexa.create_hex_grid(nx=5,
                                  ny=5,
@@ -69,16 +106,6 @@ hex_centers, _ = hexa.create_hex_grid(nx=5,
                                  do_plot=True)
                                  
 plt.show() 
-
-
-
-
-
-
-
-
-
-
 
 
 
