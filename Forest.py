@@ -16,9 +16,9 @@ matplotlib.use("TkAgg")
 class Forest():
     
     def init_random(self, rows, columns):
-        for i in range(0,rows):
-            for j in range(0,columns):
-                rand_state = random.randint(1,3)
+        for i in range(0, rows):
+            for j in range(0, columns):
+                rand_state = random.randint(1, 3)
                 """
                 if rand_state == 1:
                     state = "Healthy"
@@ -56,31 +56,35 @@ class Forest():
             self.init_random(rows, columns)
            
     def plot(self):
-        cmap = colors.ListedColormap(['green', 'red', 'black'])
-        bounds=[0.9,1.9,2.9,4]
-        norm = colors.BoundaryNorm(bounds, cmap.N)
-        #self.a.imshow(self.forest[:,:], interpolation='nearest', cmap=cmap, norm=norm) # origin = 'higher'
-        #self.a.scatter(3,4,color='b')
-        #self.fig.canvas.draw()
         hex_centers, _ = create_hex_grid(nx=self.rows,
                                          ny=self.columns,
                                          do_plot=False)
         x_hex_coords = hex_centers[:, 0]
-        #print(x_hex_coords.shape)
         y_hex_coords = hex_centers[:, 1]
         color = np.zeros([x_hex_coords.shape[0], 3])
-        for i in range(x_hex_coords.shape[0]):
-            #for j in range(self.columns):
-            if self.forest[i,0] == 0:
-                color[i, :] = [0.3, 0.1, 1]
-            else:
-                color[i, :] = [0, 0.7, 0.2]
-        self.a = plot_single_lattice_custom_colors(x_hex_coords, y_hex_coords,
+        for i in range(self.rows):
+            for j in range(self.columns):
+                if 1.1 > self.forest[i, j] > 0.9:
+                    color[i * self.columns + j, :] = [0.1, 0.7, 0.2]  # green
+                    continue
+                if 2.1 > self.forest[i, j] > 1.9:
+                    color[i * self.columns + j, :] = [0.7, 0.1, 0.1]  # red
+                    continue
+                if 3.1 > self.forest[i, j] > 2.9:
+                    color[i * self.columns + j, :] = [0, 0, 0]  # black
+                    continue
+                else:
+                    color[i * self.columns + j, :] = [1, 1, 1]  # white
+        self.a.cla()
+        plot_single_lattice_custom_colors(x_hex_coords, y_hex_coords,
                                           face_color=color,
                                           edge_color=color,
                                           min_diam=0.9,
-                                          plotting_gap=0.05,
-                                          rotate_deg=0)
+                                          plotting_gap=0.02,
+                                          rotate_deg=0,
+                                          h_ax=self.a)
+        #self.a.scatter(3, 4, color='b')
+
         self.fig.canvas.draw()
 
 # Fire model calculates the new fire distribution on the forest for each timestep
