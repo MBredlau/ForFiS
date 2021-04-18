@@ -8,7 +8,7 @@ Created on Wed Feb 24 20:28:43 2021
 
 import Forest
 import time
-import hexalattice as hexa
+from hexalattice.hexalattice import *
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.interactive(True)
@@ -20,8 +20,8 @@ import tkinter as tk
     
 class simulation(Forest.Fire_model, Forest.Agent_model):
     def __init__(self, GUI):
-        self.columns = 21
-        self.rows = 21
+        self.columns = 16
+        self.rows = 16
         likelihood_to_ignite = GUI.alpha_regler.get() #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
         self.likelihood = 1 - likelihood_to_ignite * 0.1 # higher likelihood leads to a lower probability to ignite the trees
         fire_agression = GUI.beta_regler.get() # indicator [0, 10]. higher value leads to a faster burning down
@@ -41,6 +41,7 @@ class GUi():
         
         self.fig = plt.figure()
         self.a = self.fig.add_subplot(111)
+        plt.close()
         self.fenster = tk.Tk()
         self.fenster.title("Forest Fire Simulation")
         self.top_frame = tk.Frame(self.fenster)
@@ -69,7 +70,7 @@ class GUi():
         self.beta_label.pack()
         
         self.timesteps_regler = tk.Scale(self.frame3, from_=0, to=20, orient=tk.HORIZONTAL)
-        self.timesteps_regler.set(15)
+        self.timesteps_regler.set(3)
         self.timesteps_regler.pack()
         self.timesteps_label = tk.Label(self.frame3, text="Timesteps")
         self.timesteps_label.pack()
@@ -100,12 +101,20 @@ class GUi():
 
 GUI = GUi()
 
-hex_centers, _ = hexa.create_hex_grid(nx=5,
-                                 ny=5,
-                                 face_color=[[0.9, 0.1, 0.1, 0.05], [0.9, 0.1, 0.1, 0.05]],
-                                 do_plot=True)
-                                 
-plt.show() 
+#hex_centers, _ = create_hex_grid(nx=50,
+                                 #ny=50,
+                                 #do_plot=False)
+#x_hex_coords = hex_centers[:, 0]
+#y_hex_coords = hex_centers[:, 1]
 
+#image_path = 'deadpool.jpg'     # Works with .png, .jpg, .tif
+#colors = sample_colors_from_image_by_grid(image_path, x_hex_coords, y_hex_coords)
+#plot_single_lattice_custom_colors(x_hex_coords, y_hex_coords,
+                                      #face_color=colors,
+                                      #edge_color=colors,
+                                      #min_diam=0.9,
+                                      #plotting_gap=0.05,
+                                      #rotate_deg=0)
 
-
+#plt.show()
+#plt.savefig('deadpool_hexa.png')
