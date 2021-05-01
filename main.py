@@ -18,8 +18,8 @@ matplotlib.use("TkAgg")
     
 class Simulation(Forest.FireModel, Forest.AgentModel):
     def __init__(self, GUI):
-        self.columns = 16  # can be odd or even
-        self.rows = 16  # just even
+        self.columns = 7  # should both be odd for low numbers. Looks awful otherwise
+        self.rows = 7
         likelihood_to_ignite = GUI.alpha_slider.get()  #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
         self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to a lower probability to ignite the trees
         fire_agression = GUI.beta_slider.get()  # indicator [0, 10]. higher value leads to a faster burning down
@@ -29,8 +29,8 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
         self.delta_time = 0.5
         self.fig = GUI.fig
         self.a = GUI.a
-        fire_source = 'centre'  # init random or centre
-        super().__init__(self.rows, self.columns, fire_source)
+        fire_source = 'hexa'  # init random or centre or hexa
+        super().__init__(fire_source)
                 
 
 class GUi:
@@ -69,7 +69,7 @@ class GUi:
         self.timesteps_slider = tk.Scale(self.frame3, from_=0, to=20, orient=tk.HORIZONTAL)
         self.timesteps_slider.set(3)
         self.timesteps_slider.pack()
-        self.timesteps_label = tk.Label(self.frame3, text="Timesteps")
+        self.timesteps_label = tk.Label(self.frame3, text="Time steps")
         self.timesteps_label.pack()
         
         scenario = Simulation(self)
@@ -88,11 +88,11 @@ class GUi:
 
     def start_simulation(self):
         scenario = Simulation(self)
-        scenario.plot()
+        scenario.plot_hex()
         for i in range(0, scenario.timesteps):
             time.sleep(scenario.delta_time)
             scenario.transition()
-            scenario.plot()
+            scenario.plot_hex()
             scenario.act()
 
 

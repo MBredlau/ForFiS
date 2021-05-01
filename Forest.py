@@ -16,11 +16,14 @@ matplotlib.use("TkAgg")
 # Forest gets initialized with a specified fire distribution
 class Forest:
     
-    def init_random(self, rows, columns):
-        for i in range(0, rows):
-            for j in range(0, columns):
+    def init_random(self):
+        for i in range(0, self.rows):
+            for j in range(0, self.columns):
                 rand_state = random.randint(1, 3)
                 """
+                self.num_healthy = 0
+                self.num_fire = 0
+                self.num_burnt = 0
                 if rand_state == 1:
                     state = "Healthy"
                     self.num_healthy += 1
@@ -31,43 +34,47 @@ class Forest:
                     state = 'Burnt'
                     self.num_burnt += 1
                     """
-                self.forest[i,j] = rand_state
+                self.forest[i, j] = rand_state
         
-    def init_centre(self, rows, columns):
-        for i in range(0, rows):
-            for j in range(0, columns):
-                if (i == rows / 2 and j == columns / 2) or (i == (rows - 1) / 2 and j == (columns - 1) / 2):
+    def init_centre(self):
+        for i in range(0, self.rows):
+            for j in range(0, self.columns):
+                if (i == self.rows / 2 and j == self.columns / 2) or (i == (self.rows - 1) / 2 and j == (self.columns - 1) / 2):
                     self.forest[i, j] = 2
                 else:
                     self.forest[i, j] = 1
 
-    def init_hexa(self, rows, columns):
-        for i in range(0, rows):
-            for j in range(0, columns):
-                if (i % 2) and not (j % 2):
-                    if (i == (rows / 2) - 1 and j == columns / 2 or (i == (rows / 2) - 1 and j == (columns - 1) / 2)):# or (i == (rows / 2) - 1 and j == columns / 2 or (i == (rows / 2) - 1 and j == (columns - 1) / 2)):
+    def init_hexa(self):
+        for i in range(0, self.rows):
+            for j in range(0, self.columns):
+                if (not (i % 2) and not (j % 2)) or ((j % 2) and (i % 2)):
+                    self.forest[i, j] = 1
+                if self.forest[i, j]:
+                    if (i == self.rows / 2 or i == (self.rows - 1) / 2) and (
+                            j == self.columns / 2 or j == self.columns / 2 - 1):  # or (i == (rows / 2) - 1 and j == columns / 2 or (i == (rows / 2) - 1 and j == (columns - 1) / 2)):
                         self.forest[i, j] = 2
-                    else:
-                        self.forest[i, j] = 1
-                if (j % 2) and not (i % 2):
-                        self.forest[i, j] = 1
 
-    def __init__(self, rows, columns, initmode='hexa'):
+    def __init__(self, initmode='hexa'):
         #self.forest = np.empty((rows, columns)), dtype=object)
-        self.forest = np.zeros((rows, columns))
-        self.forest_new = np.zeros((rows, columns))
-        self.actions = np.zeros((rows, columns))
-        #self.num_healthy = 0
-        #self.num_fire = 0
-        #self.num_burnt = 0
+
         if initmode == 'random':
-            self.init_random(rows, columns)
+            self.init_arrays()
+            self.init_random()
         elif initmode == 'centre':
-            self.init_centre(rows, columns)
+            self.init_arrays()
+            self.init_centre()
         elif initmode == 'hexa':
-            self.init_hexa(rows, columns)
-        else: # default
-            self.init_random(rows, columns)
+            self.columns *= 2
+            self.init_arrays()
+            self.init_hexa()
+        else:  # default, if input is wrong
+            self.init_arrays()
+            self.init_random()
+
+    def init_arrays(self):
+        self.forest = np.zeros((self.rows, self.columns))
+        self.forest_new = np.zeros((self.rows, self.columns))
+        self.actions = np.zeros((self.rows, self.columns))
 
     def plot_rectangular(self):
         cmap = colors.ListedColormap(['white', 'green', 'red', 'black'])
@@ -77,48 +84,32 @@ class Forest:
         self.fig.canvas.draw()
 
     def plot_hex(self):
-        # hex_centers, _ = create_hex_grid(nx=self.rows,
-        #                                 ny=self.columns,
-        #                                 do_plot=False)
-        hex_centers, _ = create_hex_grid(nx=2*np.count_nonzero(self.forest[1,:])+1,
-                                         ny=2*np.count_nonzero(self.forest[:,1])+1,
+        forest = []
+        for i in range(self.rows):
+            forest.append([])
+            for j in range(self.columns):
+                if self.forest[i, j]:
+                    forest[i].append(self.forest[i, j])
+        hex_centers, _ = create_hex_grid(nx=len(forest[0]),
+                                         ny=len(forest),
                                          do_plot=False)
         x_hex_coords = hex_centers[:, 0]
         y_hex_coords = hex_centers[:, 1]
         color = np.zeros([x_hex_coords.shape[0], 3])
-        index = 0
-        for i in range(int((self.rows % 2 + self.rows) / 2)):
-            for j in range(self.columns):
-                print(self.forest[i, j])
-                print(index)
-                if 1.1 > self.forest[2 * i, j] > 0.9:
-                    # color[i * self.columns + j, :] = [0.1, 0.7, 0.2]  # green
-                    color[index, :] = [0.1, 0.7, 0.2]  # green
-                    index += 1
+        for i in range(len(forest)):
+            for j in range(len(forest[0])):
+                if 1.1 > forest[i][j] > 0.9:
+                    color[i * len(forest[0]) + j, :] = [0.1, 0.7, 0.2]  # green
                     continue
-                if 2.1 > self.forest[2 * i, j] > 1.9:
-                    color[index, :] = [0.7, 0.1, 0.1]  # red
-                    index += 1
+                if 2.1 > forest[i][j] > 1.9:
+                    color[i * len(forest[0]) + j, :] = [0.7, 0.1, 0.1]  # red
                     continue
-                if 3.1 > self.forest[2 * i, j] > 2.9:
-                    color[index, :] = [0, 0, 0]  # black
-                    index += 1
+                if 3.1 > forest[i][j] > 2.9:
+                    color[i * len(forest[0]) + j, :] = [0, 0, 0]  # black
                     continue
-                if 1.1 > self.forest[2 * i + 1, j] > 0.9:
-                    # color[i * self.columns + j, :] = [0.1, 0.7, 0.2]  # green
-                    color[index, :] = [0.1, 0.7, 0.2]  # green
-                    index += 1
-                    continue
-                if 2.1 > self.forest[2 * i + 1, j] > 1.9:
-                    color[index, :] = [0.7, 0.1, 0.1]  # red
-                    index += 1
-                    continue
-                if 3.1 > self.forest[2 * i + 1, j] > 2.9:
-                    color[index, :] = [0, 0, 0]  # black
-                    index += 1
-                    continue
-                # else:
-                #    color[i * self.columns + j, :] = [1, 1, 1]  # white
+                else:
+                    color[i * len(forest[0]) + j, :] = [1, 1, 1]  # white
+
         self.a.cla()
         plot_single_lattice_custom_colors(x_hex_coords, y_hex_coords,
                                           face_color=color,
@@ -128,10 +119,10 @@ class Forest:
                                           rotate_deg=0,
                                           h_ax=self.a)
         # self.a.scatter(3, 4, color='b')
-
         self.fig.canvas.draw()
 
     def plot(self):
+
         hex_centers, _ = create_hex_grid(nx=self.rows,
                                          ny=self.columns,
                                          do_plot=False)
@@ -160,16 +151,15 @@ class Forest:
                                           rotate_deg=0,
                                           h_ax=self.a)
         # self.a.scatter(3, 4, color='b')
-
         self.fig.canvas.draw()
 
 
 # Fire model calculates the new fire distribution on the forest for each timestep
 class FireModel(Forest):
-            
-    def __init__(self, rows, columns, initmode='centre'):
-        super().__init__(rows, columns, initmode)
-        self.prob_transit = np.zeros((rows, columns))
+
+    def __init__(self, initmode='centre'):
+        super().__init__(initmode)
+        self.prob_transit = np.zeros((self.rows, self.columns))
         
     def transition(self):
         self.forest_new[:] = self.forest[:]
@@ -187,41 +177,48 @@ class FireModel(Forest):
         self.forest[:] = self.forest_new[:]
 
     def get_number_neighbors_with_value(self, row, column, value):
-        if column == 0 and row == 0:
-            return np.count_nonzero(self.forest[row: row + 2, column: column + 2] == value) + (self.forest[row + 2, column] == value)
-        if row >= self.rows - 2:
-            return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == value) + (self.forest[row - 2, column] == value)
+        if column == 0 and row == 0:  # should never be reached
+            return np.count_nonzero(self.forest[row: row + 2, column: column + 2] == value) + (self.forest[row, column + 2] == value)
+        if column >= self.columns - 2:
+            return np.count_nonzero(self.forest[row - 1: row + 2, column - 1] == value) + (self.forest[row, column - 2] == value)
         if column == 0:
-            return np.count_nonzero(self.forest[row - 1: row + 2, column: column + 2] == value) + (self.forest[row + 2, column] == value) + (self.forest[row - 2, column] == value)
+            return np.count_nonzero(self.forest[row - 1: row + 2, column: column + 2] == value) + (self.forest[row, column + 2] == value) #+ (self.forest[row, column - 2] == value)
         if row == 0:
-            return np.count_nonzero(self.forest[row: row + 2, column - 1: column + 2] == value) + (self.forest[row + 2, column] == value)
-        return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == value) + (self.forest[row + 2, column] == value) + (self.forest[row - 2, column] == value)
+            return np.count_nonzero(self.forest[row: row + 2, column - 1: column + 2] == value) + (self.forest[row, column + 2] == value)
+        return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == value) + (self.forest[row, column + 2] == value) + (self.forest[row, column - 2] == value)
 
     def get_number_neighbors_on_fire(self, row, column):
         return self.get_number_neighbors_with_value(row, column, 2)
-        '''
-        if column == 0 and row == 0:  
-            #print(self.forest[row : row + 2, column : column + 2])
-            #print(np.count_nonzero(self.forest[row : row + 2, column : column + 2] == 2))
-            return np.count_nonzero(self.forest[row : row + 2, column : column + 2] == 2)
-        if column == 0:
-            #print(self.forest[row - 1: row + 2, column : column + 2])
-            #print(np.count_nonzero(self.forest[row - 1: row + 2, column : column + 2] == 2))
-            return np.count_nonzero(self.forest[row - 1: row + 2, column : column + 2] == 2)
-        if row == 0:
-            #print(self.forest[row : row + 2, column - 1 : column + 2])
-            #print(np.count_nonzero(self.forest[row : row + 2, column - 1 : column + 2] == 2))
-            return np.count_nonzero(self.forest[row : row + 2, column - 1 : column + 2] == 2)
-        #print(self.forest[row - 1 : row + 2, column - 1 : column + 2])
-        #print(np.count_nonzero(self.forest[row - 1 : row + 2, column - 1 : column + 2] == 2))
-        return np.count_nonzero(self.forest[row - 1 : row + 2, column - 1 : column + 2] == 2)
-        '''
 
+    def get_number_on_fire_rectangular(self, row, column):
+        if column == 0 and row == 0:
+            # print(self.forest[row : row + 2, column : column + 2])
+            # print(np.count_nonzero(self.forest[row : row + 2, column : column + 2] == 2))
+            return np.count_nonzero(self.forest[row: row + 2, column: column + 2] == 2)
+        if column == 0:
+            # print(self.forest[row - 1: row + 2, column : column + 2])
+            # print(np.count_nonzero(self.forest[row - 1: row + 2, column : column + 2] == 2))
+            return np.count_nonzero(self.forest[row - 1: row + 2, column: column + 2] == 2)
+        if row == 0:
+            # print(self.forest[row : row + 2, column - 1 : column + 2])
+            # print(np.count_nonzero(self.forest[row : row + 2, column - 1 : column + 2] == 2))
+            return np.count_nonzero(self.forest[row: row + 2, column - 1: column + 2] == 2)
+            # print(self.forest[row - 1 : row + 2, column - 1 : column + 2])
+            # print(np.count_nonzero(self.forest[row - 1 : row + 2, column - 1 : column + 2] == 2))
+        return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == 2)
 
 class AgentModel():
     
-    def __init__(self, rows, columns, initmode):
-        super().__init__(rows, columns, initmode)
-        
+    def __init__(self, initmode):
+        super().__init__(initmode)
+
+    def get_camera_data(self, row, column):
+        camera = np.zeros((3, 3))
+        for i in range(3):
+            for j in range(3):
+                camera[i, j] = self.forest[row + i - 1, column + j - 1]
+        print(camera)
+
     def act(self):
+        self.get_camera_data(3, 4)
         pass
