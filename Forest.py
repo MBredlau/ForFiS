@@ -39,10 +39,17 @@ class Forest:
     def init_centre(self):
         for i in range(0, self.rows):
             for j in range(0, self.columns):
-                if (i == self.rows / 2 and j == self.columns / 2) or (i == (self.rows - 1) / 2 and j == (self.columns - 1) / 2):
-                    self.forest[i, j] = 2
-                else:
-                    self.forest[i, j] = 1
+                self.forest[i, j] = 1
+        if self.rows % 2:  # rows odd
+            if self.columns % 2:  # columns odd
+                self.forest[int((self.rows - 1) / 2), int(self.columns / 2)] = 2
+            else:
+                self.forest[int((self.rows - 1) / 2), int(self.columns / 2) - 1] = 2
+        else:
+            if self.columns % 2:
+                self.forest[int(self.rows / 2), int((self.columns - 1) / 2)] = 2
+            else:
+                self.forest[int(self.rows / 2), int(self.columns / 2)] = 2
 
     def init_hexa(self):
         for i in range(0, self.rows):
@@ -54,8 +61,8 @@ class Forest:
                             j == self.columns / 2 or j == self.columns / 2 - 1):  # or (i == (rows / 2) - 1 and j == columns / 2 or (i == (rows / 2) - 1 and j == (columns - 1) / 2)):
                         self.forest[i, j] = 2
 
-    def __init__(self, initmode='hexa'):
-        #self.forest = np.empty((rows, columns)), dtype=object)
+    def __init__(self, initmode='centre'):
+        # self.forest = np.empty((rows, columns)), dtype=object)
 
         if initmode == 'random':
             self.init_arrays()
@@ -166,7 +173,9 @@ class FireModel(Forest):
         for row in range(0, self.rows):
             for column in range(0, self.columns):
                 if self.forest[row, column] == 1:  # healthy
-                    fire_neighbors = self.get_number_neighbors_on_fire(row, column)
+                    row_indices, column_indices = self.get_neighbor_indices(row, column)
+                    fire_neighbors = self.count_trees_on_fire(row_indices, column_indices)
+                    # fire_neighbors = self.get_number_neighbors_on_fire(row, column)
                     self.prob_transit[row, column] += 1 - self.likelihood ** fire_neighbors
                 if self.forest[row, column] == 2:  # on fire
                     self.prob_transit[row, column] += self.beta - self.actions[row, column] * self.delta_beta
@@ -176,19 +185,88 @@ class FireModel(Forest):
                     self.prob_transit[row, column] = 0
         self.forest[:] = self.forest_new[:]
 
-    def get_number_neighbors_with_value(self, row, column, value):
+    def get_number_neighbors_with_value_old(self, row, column, value):
         if column == 0 and row == 0:  # should never be reached
             return np.count_nonzero(self.forest[row: row + 2, column: column + 2] == value) + (self.forest[row, column + 2] == value)
         if column >= self.columns - 2:
             return np.count_nonzero(self.forest[row - 1: row + 2, column - 1] == value) + (self.forest[row, column - 2] == value)
         if column == 0:
-            return np.count_nonzero(self.forest[row - 1: row + 2, column: column + 2] == value) + (self.forest[row, column + 2] == value) #+ (self.forest[row, column - 2] == value)
+            return np.count_nonzero(self.forest[row - 1: row + 2, column: column + 2] == value) + (self.forest[row, column + 2] == value)  # + (self.forest[row, column - 2] == value)
         if row == 0:
             return np.count_nonzero(self.forest[row: row + 2, column - 1: column + 2] == value) + (self.forest[row, column + 2] == value)
         return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == value) + (self.forest[row, column + 2] == value) + (self.forest[row, column - 2] == value)
 
+    def get_number_neighbors_with_value(self, row, column, value):
+        # number_neighbors = 0
+        if column == 0 and row == 0:
+            return int(self.forest[row, column + 1] == value) + int(self.forest[
+                row + 1, column] == value) + int(self.forest[row + 1, column + 1] == value)
+        if row == 0 and column < self.columns - 1:
+            return int(self.forest[row, column + 1] == value) + int(self.forest[row, column - 1] == value) + int(self.forest[
+                row + 1, column] == value) + int(self.forest[row + 1, column + 1] == value)
+        if column == 0 and row < self.rows - 1:
+            return int(self.forest[row - 1, column] == value) + int(self.forest[row - 1, column + 1] == value) + int(self.forest[
+                row, column + 1] == value) + int(self.forest[row + 1, column] == value) + int(self.forest[row + 1, column + 1] == value)
+        if column == self.columns - 1 and row == self.rows - 1:
+            return int(self.forest[row - 1, column] == value) + int(self.forest[row, column - 1] == value)
+        if column == self.columns - 1:
+            return int(self.forest[row - 1, column] == value) + int(self.forest[row, column - 1] == value) + int(self.forest[row + 1, column] == value)
+        if row == self.rows - 1:
+            return int(self.forest[row - 1, column] == value) + int(self.forest[row - 1, column + 1] == value) + int(self.forest[
+                row, column + 1] == value) + int(self.forest[row, column - 1] == value)
+        return int(self.forest[row - 1, column] == value) + int(self.forest[row - 1, column + 1] == value) + int(self.forest[
+            row, column + 1] == value) + int(self.forest[row, column - 1] == value) + int(self.forest[row + 1, column] == value) + int(self.forest[
+                row + 1, column + 1] == value)
+
+    def count_trees_on_fire(self, row_indices, column_indices):
+        trees_on_fire = 0
+        for index in range(len(row_indices)):
+            if self.forest[row_indices[index], column_indices[index]] == 2:
+                trees_on_fire += 1
+        return trees_on_fire
+
     def get_number_neighbors_on_fire(self, row, column):
         return self.get_number_neighbors_with_value(row, column, 2)
+
+    def get_neighbor_indices(self, row, column):
+        row_indices = []
+        column_indices = []
+        if column > 0:
+            row_indices.append(row)
+            column_indices.append(column - 1)
+        if column < self.columns - 1:
+            row_indices.append(row)
+            column_indices.append(column + 1)
+
+        if not row % 2:  # if row is even
+            if row < self.rows - 1:
+                row_indices.append(row + 1)
+                column_indices.append(column)
+                if column > 0:
+                    row_indices.append(row + 1)
+                    column_indices.append(column - 1)
+            if row > 0:
+                row_indices.append(row - 1)
+                column_indices.append(column)
+                if column > 0:
+                    row_indices.append(row - 1)
+                    column_indices.append(column - 1)
+
+        if row % 2:  # if row is odd
+            if row < self.rows - 1:
+                row_indices.append(row + 1)
+                column_indices.append(column)
+                if column < self.columns - 1:
+                    row_indices.append(row + 1)
+                    column_indices.append(column + 1)
+            if row > 0:
+                row_indices.append(row - 1)
+                column_indices.append(column)
+                if column < self.columns - 1:
+                    row_indices.append(row - 1)
+                    column_indices.append(column + 1)
+
+        return row_indices, column_indices
 
     def get_number_on_fire_rectangular(self, row, column):
         if column == 0 and row == 0:
@@ -207,7 +285,8 @@ class FireModel(Forest):
             # print(np.count_nonzero(self.forest[row - 1 : row + 2, column - 1 : column + 2] == 2))
         return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == 2)
 
-class AgentModel():
+
+class AgentModel(Forest):
     
     def __init__(self, initmode):
         super().__init__(initmode)
@@ -217,8 +296,9 @@ class AgentModel():
         for i in range(3):
             for j in range(3):
                 camera[i, j] = self.forest[row + i - 1, column + j - 1]
-        print(camera)
+        # print(camera)
+        return camera
 
     def act(self):
-        self.get_camera_data(3, 4)
+        camera_data = self.get_camera_data(3, 4)
         pass
