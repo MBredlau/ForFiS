@@ -18,15 +18,16 @@ matplotlib.use("TkAgg")
     
 class Simulation(Forest.FireModel, Forest.AgentModel):
     def __init__(self, GUI):
-        self.columns = 11  # should both be odd for low numbers. Looks awful otherwise
-        self.rows = 11
+        self.columns = 21  # should both be odd for low numbers. Looks awful otherwise
+        self.rows = 21
+        self.number_agents = 4
         likelihood_to_ignite = GUI.alpha_slider.get()  #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
         self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to a lower probability to ignite the trees
         fire_agression = GUI.beta_slider.get()  # indicator [0, 10]. higher value leads to a faster burning down
         self.beta = fire_agression * 0.1  #(10 - fire_agression) * 0.1
-        self.delta_beta = 0.5  # efficiency of extinguishing action
+        self.delta_beta = 0.8  # efficiency of extinguishing action
         self.timesteps = GUI.timesteps_slider.get()
-        self.delta_time = 0.5
+        self.delta_time = 0.1
         self.fig = GUI.fig
         self.a = GUI.a
         fire_source = 'centre'  # init random or centre
@@ -88,11 +89,12 @@ class GUi:
 
     def start_simulation(self):
         scenario = Simulation(self)
-        scenario.plot_hex()
-        for i in range(0, scenario.timesteps):
+        scenario.plot()
+        for i in range(0, 6 * scenario.timesteps):
             time.sleep(scenario.delta_time)
-            scenario.transition()
-            scenario.plot_hex()
+            if not i % 6:
+                scenario.transition()
+            scenario.plot()
             scenario.act()
 
 

@@ -13,6 +13,11 @@ import matplotlib
 matplotlib.use("TkAgg")
 
 
+# static methods
+def calc_distance(row1, col1, row2, col2):
+    return abs(row1 - row2) + abs(col1 - col2)
+
+
 # Forest gets initialized with a specified fire distribution
 class Forest:
     
@@ -41,15 +46,22 @@ class Forest:
             for j in range(0, self.columns):
                 self.forest[i, j] = 1
         if self.rows % 2:  # rows odd
+            self.source_row = int((self.rows - 1) / 2)
             if self.columns % 2:  # columns odd
-                self.forest[int((self.rows - 1) / 2), int(self.columns / 2)] = 2
+                self.source_column = int(self.columns / 2)
+                # self.forest[int((self.rows - 1) / 2), int(self.columns / 2)] = 2
             else:
-                self.forest[int((self.rows - 1) / 2), int(self.columns / 2) - 1] = 2
+                self.source_column = int(self.columns / 2) - 1
+                # self.forest[int((self.rows - 1) / 2), int(self.columns / 2) - 1] = 2
         else:
+            self.source_row = int(self.rows / 2)
             if self.columns % 2:
-                self.forest[int(self.rows / 2), int((self.columns - 1) / 2)] = 2
+                self.source_column =  int((self.columns - 1) / 2)
+                # self.forest[int(self.rows / 2), int((self.columns - 1) / 2)] = 2
             else:
-                self.forest[int(self.rows / 2), int(self.columns / 2)] = 2
+                self.source_column = int(self.columns / 2)
+                # self.forest[int(self.rows / 2), int(self.columns / 2)] = 2
+        self.forest[self.source_row, self.source_column] = 2
 
     def init_hexa(self):
         for i in range(0, self.rows):
@@ -75,13 +87,28 @@ class Forest:
             self.init_arrays()
             self.init_hexa()
         else:  # default, if input is wrong
+            print("initmode unknown")
             self.init_arrays()
             self.init_random()
 
     def init_arrays(self):
         self.forest = np.zeros((self.rows, self.columns))
         self.forest_new = np.zeros((self.rows, self.columns))
-        self.actions = np.zeros((self.rows, self.columns))
+        if self.number_agents:
+            self.agents = []
+            self.actions = np.zeros((self.rows, self.columns))
+            for i in range(self.number_agents):
+                self.agents.append((1+i, 1))
+                '''
+                # set agents on random positions
+                agent_set = False
+                while not agent_set:
+                    row = random.randint(0, self.rows - 1)
+                    col = random.randint(0, self.columns - 1)
+                    if not self.agents[row][col]:
+                        self.agents[row][col] = 1
+                        agent_set = True
+                '''
 
     def plot_rectangular(self):
         cmap = colors.ListedColormap(['white', 'green', 'red', 'black'])
@@ -90,7 +117,7 @@ class Forest:
         self.a.imshow(self.forest[:, :], interpolation='nearest', cmap=cmap, norm=norm)  # origin = 'higher'
         self.fig.canvas.draw()
 
-    def plot_hex(self):
+    def plot(self):
         forest = []
         for i in range(self.rows):
             forest.append([])
@@ -105,6 +132,9 @@ class Forest:
         color = np.zeros([x_hex_coords.shape[0], 3])
         for i in range(len(forest)):
             for j in range(len(forest[0])):
+                if (i, j) in self.agents:  # if agent is here (regardless of action)
+                    color[i * self.columns + j, :] = [0, 0, 1]  # blue
+                    continue
                 if 1.1 > forest[i][j] > 0.9:
                     color[i * len(forest[0]) + j, :] = [0.1, 0.7, 0.2]  # green
                     continue
@@ -128,7 +158,7 @@ class Forest:
         # self.a.scatter(3, 4, color='b')
         self.fig.canvas.draw()
 
-    def plot(self):
+    def plot_old(self):
 
         hex_centers, _ = create_hex_grid(nx=self.rows,
                                          ny=self.columns,
@@ -142,7 +172,7 @@ class Forest:
                     color[i * self.columns + j, :] = [0.1, 0.7, 0.2]  # green
                     continue
                 if 2.1 > self.forest[i, j] > 1.9:
-                    color[i * self.columns + j, :] = [0.7, 0.1, 0.1]  # red
+                    color[i * self.columns + j, :] = [1, 0, 0]  # [0.7, 0.1, 0.1]  # red
                     continue
                 if 3.1 > self.forest[i, j] > 2.9:
                     color[i * self.columns + j, :] = [0, 0, 0]  # black
@@ -158,7 +188,11 @@ class Forest:
                                           rotate_deg=0,
                                           h_ax=self.a)
         # self.a.scatter(3, 4, color='b')
+      #  if self.agents:
+     #       self.plot_agents()
         self.fig.canvas.draw()
+
+    #def plot_agents(self):
 
 
 # Fire model calculates the new fire distribution on the forest for each timestep
@@ -176,9 +210,12 @@ class FireModel(Forest):
                     row_indices, column_indices = self.get_neighbor_indices(row, column)
                     fire_neighbors = self.count_trees_on_fire(row_indices, column_indices)
                     # fire_neighbors = self.get_number_neighbors_on_fire(row, column)
-                    self.prob_transit[row, column] += 1 - self.likelihood ** fire_neighbors
+                    if fire_neighbors:
+                        self.prob_transit[row, column] += 1 - self.likelihood ** fire_neighbors
+                    else:
+                        self.prob_transit[row, column] = 0
                 if self.forest[row, column] == 2:  # on fire
-                    self.prob_transit[row, column] += self.beta - self.actions[row, column] * self.delta_beta
+                    self.prob_transit[row, column] += self.beta + self.actions[row, column] * self.delta_beta
                 prob = random.randint(0, 100)
                 if (self.prob_transit[row, column] * 100) > prob:
                     self.forest_new[row, column] += 1
@@ -292,13 +329,52 @@ class AgentModel(Forest):
         super().__init__(initmode)
 
     def get_camera_data(self, row, column):
-        camera = np.zeros((3, 3))
-        for i in range(3):
-            for j in range(3):
-                camera[i, j] = self.forest[row + i - 1, column + j - 1]
-        # print(camera)
+        camera = []
+        row_indices, col_indices = self.get_neighbor_indices(row, column)
+        for i in row_indices:
+            for j in col_indices:
+                camera.append(self.forest[i, j])
+                camera.append((i, j))
         return camera
 
+    def get_possible_moves(self, row, column):
+        return self.get_neighbor_indices(row, column)
+
+    def move(self, row, column, agent_index):
+        lowest = 1000
+        rows, cols = self.get_possible_moves(row, column)
+        for neighbor_row in rows:
+            for neighbor_col in cols:
+                cost = self.calc_cost_function(neighbor_row, neighbor_col) #  - 0.01 * neighbor_row
+                print(cost)
+                if cost <= lowest:
+                    lowest = cost
+                    next_row = neighbor_row
+                    next_col = neighbor_col
+        self.agents[agent_index] = (next_row, next_col)
+
+    def calc_cost_function(self, row, column):
+        if self.forest[row, column] == 2:
+            return 0
+        return calc_distance(row, column, self.source_row, self.source_column)
+
+    def apply_actions(self, row, col):
+        if self.forest[row, col] == 2:
+            self.actions[row, col] += 1
+
     def act(self):
+        agent_index = 0
+        for (row, column) in self.agents:
+            self.move(row, column, agent_index)
+            self.apply_actions(row, column)
+            agent_index += 1
         camera_data = self.get_camera_data(3, 4)
         pass
+
+
+
+'''
+## TODO ##
+Agents can move to the same field (and will do with a easy heuristic. Limit the movement to only free fields
+improve heuristic
+'''
