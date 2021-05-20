@@ -8,14 +8,15 @@ Created on Mon Mar 22 19:03:58 2021
 import numpy as np
 from matplotlib import colors
 import random
+import math
 from hexalattice.hexalattice import *
 import matplotlib
 matplotlib.use("TkAgg")
 
 
 # static methods
-def calc_distance(row1, col1, row2, col2):
-    return abs(row1 - row2) + abs(col1 - col2)
+def euclidean_distance(row1, col1, row2, col2):
+    return math.sqrt((row1 - row2) ** 2 + (col1 - col2) ** 2)
 
 
 # Forest gets initialized with a specified fire distribution
@@ -356,7 +357,7 @@ class AgentModel(Forest):
     def calc_cost_function(self, row, column):
         if self.forest[row, column] == 2:
             return 0
-        return calc_distance(row, column, self.source_row, self.source_column)
+        return euclidean_distance(row, column, self.source_row, self.source_column)
 
     def apply_actions(self, row, col):
         if self.forest[row, col] == 2:
@@ -377,4 +378,5 @@ class AgentModel(Forest):
 ## TODO ##
 Agents can move to the same field (and will do with a easy heuristic. Limit the movement to only free fields
 improve heuristic
+restructurize code
 '''

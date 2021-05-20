@@ -17,9 +17,11 @@ matplotlib.use("TkAgg")
         
     
 class Simulation(Forest.FireModel, Forest.AgentModel):
+
     def __init__(self, GUI):
-        self.columns = 21  # should both be odd for low numbers. Looks awful otherwise
-        self.rows = 21
+
+        self.columns = 41  # should both be odd for low numbers. Looks awful otherwise
+        self.rows = 41
         self.number_agents = 4
         likelihood_to_ignite = GUI.alpha_slider.get()  #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
         self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to a lower probability to ignite the trees
