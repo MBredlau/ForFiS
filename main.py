@@ -23,6 +23,7 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
         self.columns = 41  # should both be odd for low numbers. Looks awful otherwise
         self.rows = 41
         self.number_agents = 4
+        self.mode = "Haksar"  # Haksar or Heuristik
         likelihood_to_ignite = GUI.alpha_slider.get()  #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
         self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to a lower probability to ignite the trees
         fire_agression = GUI.beta_slider.get()  # indicator [0, 10]. higher value leads to a faster burning down

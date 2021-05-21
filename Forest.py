@@ -64,7 +64,7 @@ class Forest:
                 # self.forest[int(self.rows / 2), int(self.columns / 2)] = 2
         self.forest[self.source_row, self.source_column] = 2
 
-    def init_hexa(self):
+    def init_hex(self):
         for i in range(0, self.rows):
             for j in range(0, self.columns):
                 if (not (i % 2) and not (j % 2)) or ((j % 2) and (i % 2)):
@@ -76,30 +76,13 @@ class Forest:
 
     def __init__(self, initmode='centre'):
         # self.forest = np.empty((rows, columns)), dtype=object)
-
-        if initmode == 'random':
-            self.init_arrays()
-            self.init_random()
-        elif initmode == 'centre':
-            self.init_arrays()
-            self.init_centre()
-        elif initmode == 'hexa':
-            self.columns *= 2
-            self.init_arrays()
-            self.init_hexa()
-        else:  # default, if input is wrong
-            print("initmode unknown")
-            self.init_arrays()
-            self.init_random()
-
-    def init_arrays(self):
         self.forest = np.zeros((self.rows, self.columns))
         self.forest_new = np.zeros((self.rows, self.columns))
         if self.number_agents:
             self.agents = []
             self.actions = np.zeros((self.rows, self.columns))
             for i in range(self.number_agents):
-                self.agents.append((1+i, 1))
+                self.agents.append((1 + i, 1))
                 '''
                 # set agents on random positions
                 agent_set = False
@@ -110,6 +93,19 @@ class Forest:
                         self.agents[row][col] = 1
                         agent_set = True
                 '''
+        if initmode == 'random':
+            self.init_random()
+        elif initmode == 'centre':
+            self.init_centre()
+        else:  # default, if input is wrong
+            print("initmode unknown")
+            self.init_random()
+        '''
+        elif initmode == 'hex':
+            self.columns *= 2
+            self.init_arrays()
+            self.init_hex()
+        '''
 
     def plot_rectangular(self):
         cmap = colors.ListedColormap(['white', 'green', 'red', 'black'])
@@ -128,9 +124,9 @@ class Forest:
         hex_centers, _ = create_hex_grid(nx=len(forest[0]),
                                          ny=len(forest),
                                          do_plot=False)
-        x_hex_coords = hex_centers[:, 0]
-        y_hex_coords = hex_centers[:, 1]
-        color = np.zeros([x_hex_coords.shape[0], 3])
+        x_hex_cords = hex_centers[:, 0]
+        y_hex_cords = hex_centers[:, 1]
+        color = np.zeros([x_hex_cords.shape[0], 3])
         for i in range(len(forest)):
             for j in range(len(forest[0])):
                 if (i, j) in self.agents:  # if agent is here (regardless of action)
@@ -149,14 +145,13 @@ class Forest:
                     color[i * len(forest[0]) + j, :] = [1, 1, 1]  # white
 
         self.a.cla()
-        plot_single_lattice_custom_colors(x_hex_coords, y_hex_coords,
+        plot_single_lattice_custom_colors(x_hex_cords, y_hex_cords,
                                           face_color=color,
                                           edge_color=color,
                                           min_diam=0.9,
                                           plotting_gap=0.02,
                                           rotate_deg=0,
                                           h_ax=self.a)
-        # self.a.scatter(3, 4, color='b')
         self.fig.canvas.draw()
 
     def plot_old(self):
@@ -164,9 +159,9 @@ class Forest:
         hex_centers, _ = create_hex_grid(nx=self.rows,
                                          ny=self.columns,
                                          do_plot=False)
-        x_hex_coords = hex_centers[:, 0]
-        y_hex_coords = hex_centers[:, 1]
-        color = np.zeros([x_hex_coords.shape[0], 3])
+        x_hex_cords = hex_centers[:, 0]
+        y_hex_cords = hex_centers[:, 1]
+        color = np.zeros([x_hex_cords.shape[0], 3])
         for i in range(self.rows):
             for j in range(self.columns):
                 if 1.1 > self.forest[i, j] > 0.9:
@@ -181,19 +176,14 @@ class Forest:
                 else:
                     color[i * self.columns + j, :] = [1, 1, 1]  # white
         self.a.cla()
-        plot_single_lattice_custom_colors(x_hex_coords, y_hex_coords,
+        plot_single_lattice_custom_colors(x_hex_cords, y_hex_cords,
                                           face_color=color,
                                           edge_color=color,
                                           min_diam=0.9,
                                           plotting_gap=0.02,
                                           rotate_deg=0,
                                           h_ax=self.a)
-        # self.a.scatter(3, 4, color='b')
-      #  if self.agents:
-     #       self.plot_agents()
         self.fig.canvas.draw()
-
-    #def plot_agents(self):
 
 
 # Fire model calculates the new fire distribution on the forest for each timestep
@@ -328,6 +318,7 @@ class AgentModel(Forest):
     
     def __init__(self, initmode):
         super().__init__(initmode)
+        self.memory = np.zeros(self.number_agents)
 
     def get_camera_data(self, row, column):
         camera = []
@@ -343,11 +334,16 @@ class AgentModel(Forest):
 
     def move(self, row, column, agent_index):
         lowest = 1000
+        next_row = row
+        next_col = column
         rows, cols = self.get_possible_moves(row, column)
         for neighbor_row in rows:
             for neighbor_col in cols:
-                cost = self.calc_cost_function(neighbor_row, neighbor_col) #  - 0.01 * neighbor_row
-                print(cost)
+                if self.mode == "Haksar":
+                    cost = self.calc_cost_Haksar(neighbor_row, neighbor_col)
+                if self.mode == "Heuristik":
+                    cost = self.calc_cost_function(neighbor_row, neighbor_col)
+
                 if cost <= lowest:
                     lowest = cost
                     next_row = neighbor_row
@@ -355,28 +351,38 @@ class AgentModel(Forest):
         self.agents[agent_index] = (next_row, next_col)
 
     def calc_cost_function(self, row, column):
+        if (row, column) in self.agents:
+            return 1001
         if self.forest[row, column] == 2:
             return 0
         return euclidean_distance(row, column, self.source_row, self.source_column)
 
-    def apply_actions(self, row, col):
+    def calc_cost_haksar(self, row, column, agent_index):
+        if (row, column) in self.agents:
+            return 1001
+        if not self.memory[agent_index]:
+            return euclidean_distance(row, column, self.source_row, self.source_column)
+        if self.forest[row, column] == 2:
+            return 0
+
+    def apply_actions(self, row, col, agent_index):
         if self.forest[row, col] == 2:
+            self.memory[agent_index] = 1
             self.actions[row, col] += 1
 
     def act(self):
         agent_index = 0
         for (row, column) in self.agents:
             self.move(row, column, agent_index)
-            self.apply_actions(row, column)
+            self.apply_actions(row, column, agent_index)
             agent_index += 1
         camera_data = self.get_camera_data(3, 4)
         pass
 
 
-
 '''
 ## TODO ##
-Agents can move to the same field (and will do with a easy heuristic. Limit the movement to only free fields
+DONE: Agents can move to the same field (and will do with a easy heuristic. Limit the movement to only free fields
 improve heuristic
-restructurize code
+restructure code
 '''
