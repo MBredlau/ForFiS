@@ -333,25 +333,26 @@ class AgentModel(Forest):
         return self.get_neighbor_indices(row, column)
 
     def move(self, row, column, agent_index):
-        if self.mode == "Haksar":
-            self.move_haksar()
-            pass
+        # if self.mode == "Haksar":
+        #    self.move_haksar(row, column)
+        #    pass
         lowest = 1000
         next_row = row
         next_col = column
         rows, cols = self.get_possible_moves(row, column)
         for neighbor_row in rows:
             for neighbor_col in cols:
+                if self.mode == "Haksar":
+                    cost = self.calc_cost_haksar(neighbor_row, neighbor_col, agent_index)
                 if self.mode == "Heuristik":
                     cost = self.calc_cost_function(neighbor_row, neighbor_col)
-
                 if cost <= lowest:
                     lowest = cost
                     next_row = neighbor_row
                     next_col = neighbor_col
         self.agents[agent_index] = (next_row, next_col)
 
-    def move_haksar(self):
+    def move_haksar(self, row, column):
         position = np.array([row, column])
         rotation_vector = position - (self.source_row, self.source_column)
         norm = np.linalg.norm(rotation_vector, 2)
@@ -367,18 +368,27 @@ class AgentModel(Forest):
         return euclidean_distance(row, column, self.source_row, self.source_column)
 
     def calc_cost_haksar(self, row, column, agent_index):
-        if (row, column) in self.agents:
+        if (row, column) in self.agents:  # avoid place of other agents
             return 1001
-        position = np.array([row, column])
-        rotation_vector = position - (self.source_row, self.source_column)
+        if not self.memory[agent_index]:  # if no fire seen, go to fire source
+            return euclidean_distance(row, column, self.source_row, self.source_column)
+        (base_row, base_col) = self.agents[agent_index]
+        position = np.array([base_row, base_col])
+        rotation_vector = (self.source_row, self.source_column) - position
         norm = np.linalg.norm(rotation_vector, 2)
         if norm != 0:
             rotation_vector = rotation_vector / norm
-        rotation_vector = np.array([rotation_vector[1], -rotation_vector[0]])
-        if not self.memory[agent_index]:
+        rotation_vector = np.array([- rotation_vector[1], rotation_vector[0]])
+        if euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.sqrt(2) and euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
+            if self.forest[row, column] == 2:  # if sees fire to the "left", go there
+                return 0
+            if self.forest[row, column] == 3:  # if burnt go there, but less important than fire. And got away from source to reach fire front again
+                return 1
+        row_indices, column_indices = self.get_neighbor_indices(row, column)
+        fire_neighbors = self.count_trees_on_fire(row_indices, column_indices)
+        if not fire_neighbors:
             return euclidean_distance(row, column, self.source_row, self.source_column)
-        if self.forest[row, column] == 2:
-            return 0
+        return euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
 
     def apply_actions(self, row, col, agent_index):
         if self.forest[row, col] == 2:

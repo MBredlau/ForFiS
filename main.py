@@ -15,14 +15,20 @@ import tkinter as tk
 matplotlib.interactive(True)
 matplotlib.use("TkAgg")
         
-    
+
+# standard simulation parameters:
+size = 28
+alpha = 7
+agents = 3
+
+
 class Simulation(Forest.FireModel, Forest.AgentModel):
 
     def __init__(self, GUI):
 
-        self.columns = 41  # should both be odd for low numbers. Looks awful otherwise
-        self.rows = 41
-        self.number_agents = 4
+        self.columns = GUI.size_slider.get()  # should both be odd for low numbers. Looks awful otherwise
+        self.rows = self.columns
+        self.number_agents = GUI.agents_slider.get()
         self.mode = "Haksar"  # Haksar or Heuristik
         likelihood_to_ignite = GUI.alpha_slider.get()  #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
         self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to a lower probability to ignite the trees
@@ -40,7 +46,8 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
 class GUi:
 
     def __init__(self):    
-        
+
+        self.reset = False
         self.fig = plt.figure()
         self.a = self.fig.add_subplot(111)
         plt.close()
@@ -50,30 +57,46 @@ class GUi:
         self.top_frame.pack()
         self.left_frame = tk.Frame(self.top_frame)
         self.left_frame.pack(side=tk.LEFT)
+        self.frame1 = tk.Frame(self.top_frame)
+        self.frame1.pack(side=tk.LEFT)
         self.frame2 = tk.Frame(self.top_frame)
         self.frame2.pack(side=tk.LEFT)
         self.frame3 = tk.Frame(self.top_frame)
-        self.frame3.pack(side=tk.RIGHT)
+        self.frame3.pack(side=tk.LEFT)
+        self.frame4 = tk.Frame(self.top_frame)
+        self.frame4.pack(side=tk.RIGHT)
         
         self.bottom_frame = tk.Frame(self.window)
         self.bottom_frame.pack(side=tk.BOTTOM)
         
         self.alpha_slider = tk.Scale(self.left_frame, from_=0, to=10, orient=tk.HORIZONTAL)
-        self.alpha_slider.set(3)
+        self.alpha_slider.set(alpha)
         self.alpha_slider.pack()
         self.alpha_label = tk.Label(self.left_frame, text="Ignition Likelihood")
         self.alpha_label.pack()
         
-        self.beta_slider = tk.Scale(self.frame2, from_=0, to=10, orient=tk.HORIZONTAL)
+        self.beta_slider = tk.Scale(self.frame1, from_=0, to=10, orient=tk.HORIZONTAL)
         self.beta_slider.set(4)
         self.beta_slider.pack()
-        self.beta_label = tk.Label(self.frame2, text="Fire Agression")
+        self.beta_label = tk.Label(self.frame1, text="Fire Agression")
         self.beta_label.pack()
+
+        self.size_slider = tk.Scale(self.frame2, from_=5, to=41, orient=tk.HORIZONTAL)
+        self.size_slider.set(size)
+        self.size_slider.pack()
+        self.size_label = tk.Label(self.frame2, text="Forest Size")
+        self.size_label.pack()
+
+        self.agents_slider = tk.Scale(self.frame3, from_=0, to=8, orient=tk.HORIZONTAL)
+        self.agents_slider.set(agents)
+        self.agents_slider.pack()
+        self.agents_label = tk.Label(self.frame3, text="Number of Agents")
+        self.agents_label.pack()
         
-        self.timesteps_slider = tk.Scale(self.frame3, from_=0, to=20, orient=tk.HORIZONTAL)
-        self.timesteps_slider.set(3)
+        self.timesteps_slider = tk.Scale(self.frame4, from_=0, to=20, orient=tk.HORIZONTAL)
+        self.timesteps_slider.set(5)
         self.timesteps_slider.pack()
-        self.timesteps_label = tk.Label(self.frame3, text="Time steps")
+        self.timesteps_label = tk.Label(self.frame4, text="Time steps")
         self.timesteps_label.pack()
         
         scenario = Simulation(self)
