@@ -57,7 +57,7 @@ class Forest:
         else:
             self.source_row = int(self.rows / 2)
             if self.columns % 2:
-                self.source_column =  int((self.columns - 1) / 2)
+                self.source_column = int((self.columns - 1) / 2)
                 # self.forest[int(self.rows / 2), int((self.columns - 1) / 2)] = 2
             else:
                 self.source_column = int(self.columns / 2)
@@ -333,14 +333,15 @@ class AgentModel(Forest):
         return self.get_neighbor_indices(row, column)
 
     def move(self, row, column, agent_index):
+        if self.mode == "Haksar":
+            self.move_haksar()
+            pass
         lowest = 1000
         next_row = row
         next_col = column
         rows, cols = self.get_possible_moves(row, column)
         for neighbor_row in rows:
             for neighbor_col in cols:
-                if self.mode == "Haksar":
-                    cost = self.calc_cost_Haksar(neighbor_row, neighbor_col)
                 if self.mode == "Heuristik":
                     cost = self.calc_cost_function(neighbor_row, neighbor_col)
 
@@ -349,6 +350,14 @@ class AgentModel(Forest):
                     next_row = neighbor_row
                     next_col = neighbor_col
         self.agents[agent_index] = (next_row, next_col)
+
+    def move_haksar(self):
+        position = np.array([row, column])
+        rotation_vector = position - (self.source_row, self.source_column)
+        norm = np.linalg.norm(rotation_vector, 2)
+        if norm != 0:
+            rotation_vector = rotation_vector / norm
+        rotation_vector = np.array([rotation_vector[1], -rotation_vector[0]])
 
     def calc_cost_function(self, row, column):
         if (row, column) in self.agents:
@@ -360,6 +369,12 @@ class AgentModel(Forest):
     def calc_cost_haksar(self, row, column, agent_index):
         if (row, column) in self.agents:
             return 1001
+        position = np.array([row, column])
+        rotation_vector = position - (self.source_row, self.source_column)
+        norm = np.linalg.norm(rotation_vector, 2)
+        if norm != 0:
+            rotation_vector = rotation_vector / norm
+        rotation_vector = np.array([rotation_vector[1], -rotation_vector[0]])
         if not self.memory[agent_index]:
             return euclidean_distance(row, column, self.source_row, self.source_column)
         if self.forest[row, column] == 2:
