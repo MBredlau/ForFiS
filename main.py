@@ -47,7 +47,6 @@ class GUi:
 
     def __init__(self):    
 
-        self.reset = False
         self.fig = plt.figure()
         self.a = self.fig.add_subplot(111)
         plt.close()
@@ -104,13 +103,13 @@ class GUi:
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         
-        self.toolbar = NavigationToolbar2Tk(self.canvas, self.bottom_frame)
-        self.toolbar.update()
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        #self.toolbar = NavigationToolbar2Tk(self.canvas, self.bottom_frame)
+        #self.toolbar.update()
+        #self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         
         self.start_button = tk.Button(self.bottom_frame, text="Start", command=self.start_simulation)
         self.start_button.pack()
-        
+
         self.window.mainloop()
 
     def start_simulation(self):

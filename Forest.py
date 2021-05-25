@@ -198,8 +198,8 @@ class FireModel(Forest):
         for row in range(0, self.rows):
             for column in range(0, self.columns):
                 if self.forest[row, column] == 1:  # healthy
-                    row_indices, column_indices = self.get_neighbor_indices(row, column)
-                    fire_neighbors = self.count_trees_on_fire(row_indices, column_indices)
+                    positions = self.get_neighbor_indices(row, column)
+                    fire_neighbors = self.count_trees_on_fire(positions)
                     # fire_neighbors = self.get_number_neighbors_on_fire(row, column)
                     if fire_neighbors:
                         self.prob_transit[row, column] += 1 - self.likelihood ** fire_neighbors
@@ -246,17 +246,18 @@ class FireModel(Forest):
             row, column + 1] == value) + int(self.forest[row, column - 1] == value) + int(self.forest[row + 1, column] == value) + int(self.forest[
                 row + 1, column + 1] == value)
 
-    def count_trees_on_fire(self, row_indices, column_indices):
+    def count_trees_on_fire(self, positions):
         trees_on_fire = 0
-        for index in range(len(row_indices)):
-            if self.forest[row_indices[index], column_indices[index]] == 2:
+        for index in range(len(positions)):
+            (row, col) = positions[index]
+            if self.forest[row, col] == 2:
                 trees_on_fire += 1
         return trees_on_fire
 
     def get_number_neighbors_on_fire(self, row, column):
         return self.get_number_neighbors_with_value(row, column, 2)
 
-    def get_neighbor_indices(self, row, column):
+    def get_neighbor_indices_old(self, row, column):
         row_indices = []
         column_indices = []
         if column > 0:
@@ -296,6 +297,35 @@ class FireModel(Forest):
 
         return row_indices, column_indices
 
+    def get_neighbor_indices(self, row, column):
+        position = []
+        if column > 0:
+            position.append((row, column - 1))
+        if column < self.columns - 1:
+            position.append((row, column + 1))
+
+        if not row % 2:  # if row is even
+            if row < self.rows - 1:
+                position.append((row + 1, column))
+                if column > 0:
+                    position.append((row + 1, column - 1))
+            if row > 0:
+                position.append((row - 1, column))
+                if column > 0:
+                    position.append((row - 1, column - 1))
+
+        if row % 2:  # if row is odd
+            if row < self.rows - 1:
+                position.append((row + 1, column))
+                if column < self.columns - 1:
+                    position.append((row + 1, column + 1))
+            if row > 0:
+                position.append((row - 1, column))
+                if column < self.columns - 1:
+                    position.append((row - 1, column + 1))
+
+        return position
+
     def get_number_on_fire_rectangular(self, row, column):
         if column == 0 and row == 0:
             # print(self.forest[row : row + 2, column : column + 2])
@@ -322,11 +352,11 @@ class AgentModel(Forest):
 
     def get_camera_data(self, row, column):
         camera = []
-        row_indices, col_indices = self.get_neighbor_indices(row, column)
-        for i in row_indices:
+        position = self.get_neighbor_indices(row, column)
+        '''for i in row_indices:
             for j in col_indices:
                 camera.append(self.forest[i, j])
-                camera.append((i, j))
+                camera.append((i, j))'''
         return camera
 
     def get_possible_moves(self, row, column):
@@ -339,17 +369,16 @@ class AgentModel(Forest):
         lowest = 1000
         next_row = row
         next_col = column
-        rows, cols = self.get_possible_moves(row, column)
-        for neighbor_row in rows:
-            for neighbor_col in cols:
-                if self.mode == "Haksar":
-                    cost = self.calc_cost_haksar(neighbor_row, neighbor_col, agent_index)
-                if self.mode == "Heuristik":
-                    cost = self.calc_cost_function(neighbor_row, neighbor_col)
-                if cost <= lowest:
-                    lowest = cost
-                    next_row = neighbor_row
-                    next_col = neighbor_col
+        position = self.get_possible_moves(row, column)
+        for neighbor_row, neighbor_col in position:
+            if self.mode == "Haksar":
+                cost = self.calc_cost_haksar(neighbor_row, neighbor_col, agent_index)
+            if self.mode == "Heuristik":
+                cost = self.calc_cost_function(neighbor_row, neighbor_col)
+            if cost <= lowest:
+                lowest = cost
+                next_row = neighbor_row
+                next_col = neighbor_col
         self.agents[agent_index] = (next_row, next_col)
 
     def move_haksar(self, row, column):
@@ -384,8 +413,8 @@ class AgentModel(Forest):
                 return 0
             if self.forest[row, column] == 3:  # if burnt go there, but less important than fire. And got away from source to reach fire front again
                 return 1
-        row_indices, column_indices = self.get_neighbor_indices(row, column)
-        fire_neighbors = self.count_trees_on_fire(row_indices, column_indices)
+        positions = self.get_neighbor_indices(row, column)
+        fire_neighbors = self.count_trees_on_fire(positions)
         if not fire_neighbors:
             return euclidean_distance(row, column, self.source_row, self.source_column)
         return euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
