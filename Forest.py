@@ -408,11 +408,11 @@ class AgentModel(Forest):
         if norm != 0:
             rotation_vector = rotation_vector / norm
         rotation_vector = np.array([- rotation_vector[1], rotation_vector[0]])
-        if euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.sqrt(2) and euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
+        if euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.esqrt(2) and uclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
             if self.forest[row, column] == 2:  # if sees fire to the "left", go there
                 return 0
             if self.forest[row, column] == 3:  # if burnt go there, but less important than fire. And got away from source to reach fire front again
-                return 1
+                return 0.1
         positions = self.get_neighbor_indices(row, column)
         fire_neighbors = self.count_trees_on_fire(positions)
         if not fire_neighbors:
@@ -420,15 +420,15 @@ class AgentModel(Forest):
         return euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
 
     def apply_actions(self, row, col, agent_index):
-        if self.forest[row, col] == 2:
+        if self.forest[row, col] == 2 or self.forest[row, col] == 3:
             self.memory[agent_index] = 1
             self.actions[row, col] += 1
 
     def act(self):
         agent_index = 0
         for (row, column) in self.agents:
-            self.move(row, column, agent_index)
             self.apply_actions(row, column, agent_index)
+            self.move(row, column, agent_index)
             agent_index += 1
         camera_data = self.get_camera_data(3, 4)
         pass
@@ -437,6 +437,8 @@ class AgentModel(Forest):
 '''
 ## TODO ##
 DONE: Agents can move to the same field (and will do with a easy heuristic. Limit the movement to only free fields
-improve heuristic
-restructure code
+DONE: haksar heuristic
+apply actions -> tree get's extinguished and can't ignite neighbor trees anymore. Currently it is extinguished after igniting the neighbors
+restructure code and rely on clean code! (for master branch)
+option to simulate without GUI. Live Terminal Output and log file
 '''

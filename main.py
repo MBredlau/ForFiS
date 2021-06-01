@@ -34,7 +34,7 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
         self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to a lower probability to ignite the trees
         fire_agression = GUI.beta_slider.get()  # indicator [0, 10]. higher value leads to a faster burning down
         self.beta = fire_agression * 0.1  #(10 - fire_agression) * 0.1
-        self.delta_beta = 0.8  # efficiency of extinguishing action
+        self.delta_beta = 1  # efficiency of extinguishing action
         self.timesteps = GUI.timesteps_slider.get()
         self.delta_time = 0.1
         self.fig = GUI.fig
