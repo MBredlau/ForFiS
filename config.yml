@@ -1,0 +1,12 @@
+# Forest Fire simulation parameters
+size: 22
+alpha: 7
+beta: 4
+delta_beta: 10
+# simulation parameters
+timesteps: 5
+agents: 3
+# general setup
+gui: False
+mode: Haksar
+logfile: False

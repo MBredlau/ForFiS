@@ -41,6 +41,9 @@ class Forest:
                         self.agents[row][col] = 1
                         agent_set = True
                 '''
+        else:
+            self.agents = []
+            self.actions = np.zeros((self.rows, self.columns))
         if initmode == 'random':
             self.init_random()
         elif initmode == 'centre':
@@ -109,9 +112,10 @@ class Forest:
         color = np.zeros([x_hex_cords.shape[0], 3])
         for i in range(len(forest)):
             for j in range(len(forest[0])):
-                if (i, j) in self.agents:  # if agent is here (regardless of action)
-                    color[i * self.columns + j, :] = [0, 0, 1]  # blue
-                    continue
+                if self.number_agents:
+                    if (i, j) in self.agents:  # if agent is here (regardless of action)
+                        color[i * self.columns + j, :] = [0, 0, 1]  # blue
+                        continue
                 if 1.1 > forest[i][j] > 0.9:
                     color[i * len(forest[0]) + j, :] = [0.1, 0.7, 0.1]  # green
                     continue
@@ -160,10 +164,13 @@ class FireModel(Forest):
                     self.prob_transit[row, column] += 1 - self.beta + self.actions[row, column] * self.delta_beta
                 prob = random.randint(0, 100)
                 if (self.prob_transit[row, column] * 100) > prob:
-                    if self.actions[row, column]:
-                        self.forest_new[row, column] = 4
-                    else:
+                    if not self.number_agents:
                         self.forest_new[row, column] += 1
+                    else:
+                        if self.actions[row, column]:
+                            self.forest_new[row, column] = 4
+                        else:
+                            self.forest_new[row, column] += 1
                     self.prob_transit[row, column] = 0
         self.forest[:] = self.forest_new[:]
 
