@@ -203,6 +203,18 @@ class FireModel(Forest):
                 trees_on_fire += 1
         return trees_on_fire
 
+    def calc_stats(self):
+        trees = self.columns * self.rows
+        healthy_trees = np.count_nonzero(self.forest[:, :] == 1) / trees
+        trees_onfire = np.count_nonzero(self.forest[:, :] == 2) / trees
+        burnt_trees = np.count_nonzero(self.forest[:, :] == 3) / trees
+        extinguished_trees = np.count_nonzero(self.forest[:, :] == 4) / trees
+        return healthy_trees, trees_onfire, burnt_trees, extinguished_trees
+
+    def calc_metric(self, time):
+        healthy, onfire, burnt, extinguished = self.calc_stats()
+        return self.weights[0] * healthy * 100 + self.weights[1] * extinguished * 100 - self.weights[2] * time
+
     def get_number_neighbors_on_fire(self, row, column):
         return self.get_number_neighbors_with_value(row, column, 2)
 

@@ -4,9 +4,14 @@ alpha: 7
 beta: 4
 delta_beta: 10
 # simulation parameters
-timesteps: 5
+timesteps: 0  # 0 for full simulation
 agents: 3
 # general setup
-gui: False
+gui: True
 mode: Haksar
-logfile: False
+logfile: No
+grid: hexagonal  # hexagonal or rectangular
+# success metric weights
+healthy: 0.6
+extinguished : 0.2
+time: 0.2
