@@ -13,3 +13,15 @@ Dependencies:
 * hexalattice-1.1.0 (https://github.com/alexkaz2/hexalattice)
 * matplotlib 3.3.2
 * numpy 1.19.2
+
+---
+Please cite ForFiS if you use it in your work. Here is a suitable BibTeX entry:
+```
+@ARTICLE{Simon:ForFiS,
+  author  = {Marvin Simon, Alexander Weber and Alexander Knoll},
+  title   = {FORFIS: A forest fire firefighting simulation tool for education and research},
+  journal = {???},
+  year    = {2022},
+  pages   = {???}
+}
+```
