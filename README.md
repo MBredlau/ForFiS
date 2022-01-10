@@ -10,6 +10,6 @@ The tool is highly configurable, simplest by adapting parameters in the included
 ---
 Dependencies:
 * python 3.8.5
-* hexalattice-1.1.0
+* hexalattice-1.1.0 (https://github.com/alexkaz2/hexalattice)
 * matplotlib 3.3.2
 * numpy 1.19.2
