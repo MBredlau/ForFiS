@@ -7,8 +7,7 @@
 **ForFiS** is a Python tool to simulate forest fires along with firefighting agents with an interface for strategie finding algorithms. 
 The tool is highly configurable, simplest by adapting parameters in the included 'config.yaml' file. After configuring the tool to your desire just run the 'main.py' script with the python 3 interpreter:
 ```
-git clone 
-cd 
+git clone https://github.com/MarvinS23/ForFiS.git
 python main.py
 ```
 
@@ -16,6 +15,7 @@ python main.py
 Dependencies:
 * python 3.8.5
 * hexalattice-1.1.0 (https://github.com/alexkaz2/hexalattice)
+`pip install hexalattice`
 * matplotlib 3.3.2
 * numpy 1.19.2
 
