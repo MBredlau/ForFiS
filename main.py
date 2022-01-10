@@ -10,42 +10,129 @@ import Forest
 import time
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)  # , NavigationToolbar2Tk)
 import tkinter as tk
+import yaml
+import sys
+import os
+from datetime import datetime
 matplotlib.interactive(True)
 matplotlib.use("TkAgg")
         
+try:
+    # read standard simulation parameters from config file
+    with open("config.yml", "r") as configfile:
+        config = yaml.load(configfile, Loader=yaml.FullLoader)
 
-# standard simulation parameters:
-size = 28
-alpha = 7
-agents = 3
+    size = config["size"]
+    alpha = config["alpha"]
+    beta = config["beta"]
+    delta_beta = config["delta_beta"]
+    agents = config["agents"]
+    timesteps = config["timesteps"]
+    mode = config["mode"]
+    weights = config["healthy"], config["extinguished"], config["time"]
+    USE_GUI = config["gui"]
+    USE_LOGFILE = config["logfile"]
+    print("Loaded config file")
+except:
+    size = 22
+    alpha = 7
+    beta = 4
+    delta_beta = 10
+    agents = 3
+    timesteps = 5
+    mode = "Haksar"
+    weights = 0.6, 0.2, 0.2
+    USE_GUI = True
+    USE_LOGFILE = False
+    print("Parameters loaded")
+
+if USE_LOGFILE:
+    temp_stdout = sys.stdout
+    filename = "log" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+    completeName = os.path.join('./logfiles', filename)
+    sys.stdout = open(completeName + ".txt", "w")
+
+step = 1
 
 
 class Simulation(Forest.FireModel, Forest.AgentModel):
 
     def __init__(self, GUI):
-
-        self.columns = GUI.size_slider.get()  # should both be odd for low numbers. Looks awful otherwise
-        self.rows = self.columns
-        self.number_agents = GUI.agents_slider.get()
-        self.mode = "Haksar"  # Haksar or Heuristik
-        likelihood_to_ignite = GUI.alpha_slider.get()  #3 # indicator [0, 10], higher value leads to a higher prob to ignite the neighbor trees
-        self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to a lower probability to ignite the trees
-        fire_agression = GUI.beta_slider.get()  # indicator [0, 10]. higher value leads to a faster burning down
-        self.beta = fire_agression * 0.1  #(10 - fire_agression) * 0.1
-        self.delta_beta = 1  # efficiency of extinguishing action
-        self.timesteps = GUI.timesteps_slider.get()
-        self.delta_time = 0.1
-        self.fig = GUI.fig
-        self.a = GUI.a
-        fire_source = 'centre'  # init random or centre
+        if USE_GUI:
+            self.columns = GUI.size_slider.get()  # should both be odd for low numbers. Looks awful otherwise
+            self.rows = self.columns
+            self.number_agents = GUI.agents_slider.get()
+            self.mode = mode  # Haksar or Heuristik
+            likelihood_to_ignite = GUI.alpha_slider.get()  # [0, 10] higher value leads to higher prob to ignite trees
+            self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
+            fire_persistence = GUI.beta_slider.get()  # indicator [0, 10]. higher value -> fire persists longer
+            self.beta = fire_persistence * 0.1
+            self.delta_beta = GUI.delta_beta_slider.get() * 0.1  # efficiency of extinguishing action
+            self.timesteps = GUI.timesteps_slider.get()
+            self.delta_time = 0
+            self.weights = weights
+            self.fig = GUI.fig
+            self.a = GUI.a
+            fire_source = 'centre'  # init random or centre
+        else:
+            self.columns = size  # should both be odd for low numbers. Looks awful otherwise
+            self.rows = self.columns
+            self.number_agents = agents
+            self.mode = mode  # Haksar or Heuristik
+            likelihood_to_ignite = alpha  # [0, 10] higher value leads to higher prob to ignite trees
+            self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
+            fire_persistence = beta  # indicator [0, 10]. higher value -> fire persists longer
+            self.beta = fire_persistence * 0.1
+            self.delta_beta = delta_beta * 0.1  # efficiency of extinguishing action
+            self.timesteps = timesteps
+            self.delta_time = 0
+            self.weights = weights
+            fire_source = 'centre'  # init random or centre
         super().__init__(fire_source)
-                
+
+    def simulate(self):
+        time.sleep(self.delta_time)
+        self.transition()
+        if self.number_agents:
+            for i in range(6):
+                self.act()
+                if USE_GUI:
+                    self.plot()
+        healthy, onfire, burnt, extinguished = self.calc_stats()
+        print("trees healthy:", healthy, "on fire:", onfire, "burnt:", burnt, "extinguished:", extinguished)
+        return onfire == 0
+
+    def run_sim(self):
+        global step
+        finished = False
+        if timesteps:
+            for i in range(0, self.timesteps * (1 + (self.number_agents > 0) * 5)):
+                print("step:", step)
+                finished = self.simulate(i)
+                step += 1
+                if finished:
+                    break
+        else:
+            while not finished:
+                print("step:", step)
+                finished = self.simulate()
+                step += 1
+        print("Simulation finished!")
+        print("Overall statistics:")
+        print("Chosen strategie finding algorithm:", mode)
+        print("Time steps needed:", step)
+        healthy, onfire, burnt, extinguished = self.calc_stats()
+        print("Trees remained healthy(%):", healthy * 100)
+        print("Extinguished Trees(%):", extinguished * 100)
+        print("Burnt Trees(%):", burnt * 100)
+        success = self.calc_metric(step)
+        print("success metric value:", success)
 
 class GUi:
 
-    def __init__(self):    
+    def __init__(self):
 
         self.fig = plt.figure()
         self.a = self.fig.add_subplot(111)
@@ -63,50 +150,54 @@ class GUi:
         self.frame3 = tk.Frame(self.top_frame)
         self.frame3.pack(side=tk.LEFT)
         self.frame4 = tk.Frame(self.top_frame)
-        self.frame4.pack(side=tk.RIGHT)
-        
+        self.frame4.pack(side=tk.LEFT)
+        self.frame5 = tk.Frame(self.top_frame)
+        self.frame5.pack(side=tk.RIGHT)
+
         self.bottom_frame = tk.Frame(self.window)
         self.bottom_frame.pack(side=tk.BOTTOM)
-        
+
         self.alpha_slider = tk.Scale(self.left_frame, from_=0, to=10, orient=tk.HORIZONTAL)
         self.alpha_slider.set(alpha)
         self.alpha_slider.pack()
         self.alpha_label = tk.Label(self.left_frame, text="Ignition Likelihood")
         self.alpha_label.pack()
-        
+
         self.beta_slider = tk.Scale(self.frame1, from_=0, to=10, orient=tk.HORIZONTAL)
-        self.beta_slider.set(4)
+        self.beta_slider.set(beta)
         self.beta_slider.pack()
-        self.beta_label = tk.Label(self.frame1, text="Fire Agression")
+        self.beta_label = tk.Label(self.frame1, text="Fire Persistence")
         self.beta_label.pack()
 
-        self.size_slider = tk.Scale(self.frame2, from_=5, to=41, orient=tk.HORIZONTAL)
+        self.delta_beta_slider = tk.Scale(self.frame2, from_=0, to=10, orient=tk.HORIZONTAL)
+        self.delta_beta_slider.set(delta_beta)
+        self.delta_beta_slider.pack()
+        self.delta_beta_label = tk.Label(self.frame2, text="Retardant Efficiency")
+        self.delta_beta_label.pack()
+
+        self.size_slider = tk.Scale(self.frame3, from_=5, to=41, orient=tk.HORIZONTAL)
         self.size_slider.set(size)
         self.size_slider.pack()
-        self.size_label = tk.Label(self.frame2, text="Forest Size")
+        self.size_label = tk.Label(self.frame3, text="Forest Size")
         self.size_label.pack()
 
-        self.agents_slider = tk.Scale(self.frame3, from_=0, to=8, orient=tk.HORIZONTAL)
+        self.agents_slider = tk.Scale(self.frame4, from_=0, to=8, orient=tk.HORIZONTAL)
         self.agents_slider.set(agents)
         self.agents_slider.pack()
-        self.agents_label = tk.Label(self.frame3, text="Number of Agents")
+        self.agents_label = tk.Label(self.frame4, text="Number of Agents")
         self.agents_label.pack()
-        
-        self.timesteps_slider = tk.Scale(self.frame4, from_=0, to=20, orient=tk.HORIZONTAL)
-        self.timesteps_slider.set(5)
+
+        self.timesteps_slider = tk.Scale(self.frame5, from_=0, to=20, orient=tk.HORIZONTAL)
+        self.timesteps_slider.set(timesteps)
         self.timesteps_slider.pack()
-        self.timesteps_label = tk.Label(self.frame4, text="Time steps")
+        self.timesteps_label = tk.Label(self.frame5, text="Time steps")
         self.timesteps_label.pack()
-        
+
         scenario = Simulation(self)
         self.canvas = FigureCanvasTkAgg(scenario.fig, master=self.bottom_frame)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        
-        #self.toolbar = NavigationToolbar2Tk(self.canvas, self.bottom_frame)
-        #self.toolbar.update()
-        #self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        
+
         self.start_button = tk.Button(self.bottom_frame, text="Start", command=self.start_simulation)
         self.start_button.pack()
 
@@ -115,12 +206,15 @@ class GUi:
     def start_simulation(self):
         scenario = Simulation(self)
         scenario.plot()
-        for i in range(0, 6 * scenario.timesteps):
-            time.sleep(scenario.delta_time)
-            if not i % 6:
-                scenario.transition()
-            scenario.plot()
-            scenario.act()
+        scenario.run_sim()
 
 
-GUI = GUi()
+if USE_GUI:
+    GUI = GUi()
+else:
+    scenario = Simulation(None)
+    scenario.run_sim()
+
+if USE_LOGFILE:
+    sys.stdout.close()
+    sys.stdout = temp_stdout
