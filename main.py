@@ -31,6 +31,7 @@ try:
     agents = config["agents"]
     timesteps = config["timesteps"]
     mode = config["mode"]
+    grid = config["grid"]
     weights = config["healthy"], config["extinguished"], config["time"]
     USE_GUI = config["gui"]
     USE_LOGFILE = config["logfile"]
@@ -43,10 +44,12 @@ except:
     agents = 3
     timesteps = 5
     mode = "Haksar"
+    grid = "hexagonal"
     weights = 0.6, 0.2, 0.2
     USE_GUI = True
     USE_LOGFILE = False
-    print("Parameters loaded")
+    print("Parameters loaded from main.py. If you want to use the config file, make sure it is named correctly and "
+          "located in the right path")
 
 if USE_LOGFILE:
     temp_stdout = sys.stdout
@@ -54,7 +57,7 @@ if USE_LOGFILE:
     completeName = os.path.join('./logfiles', filename)
     sys.stdout = open(completeName + ".txt", "w")
 
-step = 1
+# step = 1
 
 
 class Simulation(Forest.FireModel, Forest.AgentModel):
@@ -65,6 +68,7 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             self.rows = self.columns
             self.number_agents = GUI.agents_slider.get()
             self.mode = mode  # Haksar or Heuristik
+            self.grid = grid
             likelihood_to_ignite = GUI.alpha_slider.get()  # [0, 10] higher value leads to higher prob to ignite trees
             self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
             fire_persistence = GUI.beta_slider.get()  # indicator [0, 10]. higher value -> fire persists longer
@@ -81,6 +85,7 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             self.rows = self.columns
             self.number_agents = agents
             self.mode = mode  # Haksar or Heuristik
+            self.grid = grid
             likelihood_to_ignite = alpha  # [0, 10] higher value leads to higher prob to ignite trees
             self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
             fire_persistence = beta  # indicator [0, 10]. higher value -> fire persists longer
@@ -99,19 +104,27 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             for i in range(6):
                 self.act()
                 if USE_GUI:
-                    self.plot()
+                    self.plot(self.grid)
+        else:
+            self.plot(self.grid)
         healthy, onfire, burnt, extinguished = self.calc_stats()
         print("trees healthy:", healthy, "on fire:", onfire, "burnt:", burnt, "extinguished:", extinguished)
         return onfire == 0
 
     def run_sim(self):
         global step
+        step = 1
         finished = False
         if timesteps:
             for i in range(0, self.timesteps * (1 + (self.number_agents > 0) * 5)):
                 print("step:", step)
-                finished = self.simulate(i)
+                finished = self.simulate()
                 step += 1
+                if USE_GUI:
+                    if grid == "rectangular":
+                        self.plot_rectangular()
+                    else:
+                        self.plot(self.grid)
                 if finished:
                     break
         else:
@@ -119,6 +132,11 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
                 print("step:", step)
                 finished = self.simulate()
                 step += 1
+                if USE_GUI:
+                    if grid == "rectangular":
+                        self.plot_rectangular()
+                    else:
+                        self.plot(self.grid)
         print("Simulation finished!")
         print("Overall statistics:")
         print("Chosen strategie finding algorithm:", mode)
@@ -129,6 +147,7 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
         print("Burnt Trees(%):", burnt * 100)
         success = self.calc_metric(step)
         print("success metric value:", success)
+
 
 class GUi:
 
@@ -181,7 +200,7 @@ class GUi:
         self.size_label = tk.Label(self.frame3, text="Forest Size")
         self.size_label.pack()
 
-        self.agents_slider = tk.Scale(self.frame4, from_=0, to=8, orient=tk.HORIZONTAL)
+        self.agents_slider = tk.Scale(self.frame4, from_=0, to=16, orient=tk.HORIZONTAL)
         self.agents_slider.set(agents)
         self.agents_slider.pack()
         self.agents_label = tk.Label(self.frame4, text="Number of Agents")
@@ -195,8 +214,8 @@ class GUi:
 
         scenario = Simulation(self)
         self.canvas = FigureCanvasTkAgg(scenario.fig, master=self.bottom_frame)
-        self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        #self.canvas.draw()
+        self.canvas.get_tk_widget().pack(side=tk.TOP)#, fill=tk.BOTH)#, expand=1)
 
         self.start_button = tk.Button(self.bottom_frame, text="Start", command=self.start_simulation)
         self.start_button.pack()
@@ -205,7 +224,10 @@ class GUi:
 
     def start_simulation(self):
         scenario = Simulation(self)
-        scenario.plot()
+        if scenario.grid == "rectangular":
+            scenario.plot_rectangular()
+        else:
+            scenario.plot(scenario.grid)
         scenario.run_sim()
 
 
