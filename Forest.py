@@ -31,16 +31,7 @@ class Forest:
             self.actions = np.zeros((self.rows, self.columns))
             for i in range(self.number_agents):
                 self.agents.append((1 + i, 1))
-                '''
-                # set agents on random positions
-                agent_set = False
-                while not agent_set:
-                    row = random.randint(0, self.rows - 1)
-                    col = random.randint(0, self.columns - 1)
-                    if not self.agents[row][col]:
-                        self.agents[row][col] = 1
-                        agent_set = True
-                '''
+                # adapt start positions of agents here
         else:
             self.agents = []
             self.actions = np.zeros((self.rows, self.columns))
@@ -90,6 +81,15 @@ class Forest:
                 self.source_column = int(self.columns / 2)
         self.forest[self.source_row, self.source_column] = 2
 
+    def plot(self, grid):
+        if grid == "hexagonal":
+            self.plot_hexagonal()
+        elif grid == "rectangular":
+            self.plot_rectangular()
+        else:
+            self.plot_hexagonal()
+            print("Grid is set to unknown mode. Hexagonal grid chosen by default.")
+
     def plot_rectangular(self):
         cmap = colors.ListedColormap(['white', 'green', 'red', 'black'])
         bounds = [-1, 0.9, 1.9, 2.9, 4]
@@ -97,7 +97,7 @@ class Forest:
         self.a.imshow(self.forest[:, :], interpolation='nearest', cmap=cmap, norm=norm)  # origin = 'higher'
         self.fig.canvas.draw()
 
-    def plot(self):
+    def plot_hexagonal(self):
         forest = []
         for i in range(self.rows):
             forest.append([])
@@ -174,27 +174,6 @@ class FireModel(Forest):
                     self.prob_transit[row, column] = 0
         self.forest[:] = self.forest_new[:]
 
-    def get_number_neighbors_with_value(self, row, column, value):
-        if column == 0 and row == 0:
-            return int(self.forest[row, column + 1] == value) + int(self.forest[
-                row + 1, column] == value) + int(self.forest[row + 1, column + 1] == value)
-        if row == 0 and column < self.columns - 1:
-            return int(self.forest[row, column + 1] == value) + int(self.forest[row, column - 1] == value) + int(self.forest[
-                row + 1, column] == value) + int(self.forest[row + 1, column + 1] == value)
-        if column == 0 and row < self.rows - 1:
-            return int(self.forest[row - 1, column] == value) + int(self.forest[row - 1, column + 1] == value) + int(self.forest[
-                row, column + 1] == value) + int(self.forest[row + 1, column] == value) + int(self.forest[row + 1, column + 1] == value)
-        if column == self.columns - 1 and row == self.rows - 1:
-            return int(self.forest[row - 1, column] == value) + int(self.forest[row, column - 1] == value)
-        if column == self.columns - 1:
-            return int(self.forest[row - 1, column] == value) + int(self.forest[row, column - 1] == value) + int(self.forest[row + 1, column] == value)
-        if row == self.rows - 1:
-            return int(self.forest[row - 1, column] == value) + int(self.forest[row - 1, column + 1] == value) + int(self.forest[
-                row, column + 1] == value) + int(self.forest[row, column - 1] == value)
-        return int(self.forest[row - 1, column] == value) + int(self.forest[row - 1, column + 1] == value) + int(self.forest[
-            row, column + 1] == value) + int(self.forest[row, column - 1] == value) + int(self.forest[row + 1, column] == value) + int(self.forest[
-                row + 1, column + 1] == value)
-
     def count_trees_on_fire(self, positions):
         trees_on_fire = 0
         for index in range(len(positions)):
@@ -215,11 +194,66 @@ class FireModel(Forest):
         healthy, onfire, burnt, extinguished = self.calc_stats()
         return self.weights[0] * healthy * 100 + self.weights[1] * extinguished * 100 - self.weights[2] * time
 
-    def get_number_neighbors_on_fire(self, row, column):
-        return self.get_number_neighbors_with_value(row, column, 2)
-
     def get_neighbor_indices(self, row, column):
         position = []
+        if self.grid == "rectangular":
+            if column == 0 and row == 0:
+                position.append((row, column + 1))
+                position.append((row + 1, column))
+                position.append((row + 1, column + 1))
+                return position
+            if column == 0:
+                if row > self.rows - 2:
+                    position.append((row - 1, column))
+                    position.append((row - 1, column + 1))
+                    position.append((row, column + 1))
+                    return position
+                position.append((row - 1, column))
+                position.append((row - 1, column + 1))
+                position.append((row, column + 1))
+                position.append((row + 1, column))
+                position.append((row + 1, column + 1))
+                return position
+            if row == 0:
+                if column > self.columns - 2:
+                    position.append((row, column - 1))
+                    position.append((row + 1, column - 1))
+                    position.append((row + 1, column))
+                    return position
+                position.append((row, column - 1))
+                position.append((row, column + 1))
+                position.append((row + 1, column - 1))
+                position.append((row + 1, column))
+                position.append((row + 1, column + 1))
+                return position
+            if row > self.rows - 2 and column > self.columns - 2:
+                position.append((row - 1, column - 1))
+                position.append((row - 1, column))
+                position.append((row, column - 1))
+                return position
+            if column > self.columns - 2:
+                position.append((row - 1, column - 1))
+                position.append((row - 1, column))
+                position.append((row, column - 1))
+                position.append((row + 1, column - 1))
+                position.append((row + 1, column))
+                return position
+            if row > self.rows - 2:
+                position.append((row - 1, column - 1))
+                position.append((row - 1, column))
+                position.append((row - 1, column + 1))
+                position.append((row, column - 1))
+                position.append((row, column + 1))
+                return position
+            position.append((row - 1, column - 1))
+            position.append((row - 1, column))
+            position.append((row - 1, column + 1))
+            position.append((row, column - 1))
+            position.append((row, column + 1))
+            position.append((row + 1, column - 1))
+            position.append((row + 1, column))
+            position.append((row + 1, column + 1))
+            return position
         if column > 0:
             position.append((row, column - 1))
         if column < self.columns - 1:
@@ -247,27 +281,86 @@ class FireModel(Forest):
 
         return position
 
+
+#class Hexagon(Forest):
+class Rectangle(Forest):
+    '''
     def get_number_on_fire_rectangular(self, row, column):
         if column == 0 and row == 0:
-            # print(self.forest[row : row + 2, column : column + 2])
-            # print(np.count_nonzero(self.forest[row : row + 2, column : column + 2] == 2))
             return np.count_nonzero(self.forest[row: row + 2, column: column + 2] == 2)
         if column == 0:
-            # print(self.forest[row - 1: row + 2, column : column + 2])
-            # print(np.count_nonzero(self.forest[row - 1: row + 2, column : column + 2] == 2))
             return np.count_nonzero(self.forest[row - 1: row + 2, column: column + 2] == 2)
         if row == 0:
-            # print(self.forest[row : row + 2, column - 1 : column + 2])
-            # print(np.count_nonzero(self.forest[row : row + 2, column - 1 : column + 2] == 2))
             return np.count_nonzero(self.forest[row: row + 2, column - 1: column + 2] == 2)
-            # print(self.forest[row - 1 : row + 2, column - 1 : column + 2])
-            # print(np.count_nonzero(self.forest[row - 1 : row + 2, column - 1 : column + 2] == 2))
         return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == 2)
+    '''
+
+    def get_neighbor_indices(self, row, column):
+        position = []
+        if self.grid == "rectangular":
+            if column == 0 and row == 0:
+                position.append((row, column + 1))
+                position.append((row + 1, column))
+                position.append((row + 1, column + 1))
+                return position
+            if column == 0:
+                if row > self.rows - 2:
+                    position.append((row - 1, column))
+                    position.append((row - 1, column + 1))
+                    position.append((row, column + 1))
+                    return position
+                position.append((row - 1, column))
+                position.append((row - 1, column + 1))
+                position.append((row, column + 1))
+                position.append((row + 1, column))
+                position.append((row + 1, column + 1))
+                return position
+            if row == 0:
+                if column > self.columns - 2:
+                    position.append((row, column - 1))
+                    position.append((row + 1, column - 1))
+                    position.append((row + 1, column))
+                    return position
+                position.append((row, column - 1))
+                position.append((row, column + 1))
+                position.append((row + 1, column - 1))
+                position.append((row + 1, column))
+                position.append((row + 1, column + 1))
+                return position
+            if row > self.rows - 2 and column > self.columns - 2:
+                position.append((row - 1, column - 1))
+                position.append((row - 1, column))
+                position.append((row, column - 1))
+                return position
+            if column > self.columns - 2:
+                position.append((row - 1, column - 1))
+                position.append((row - 1, column))
+                position.append((row, column - 1))
+                position.append((row + 1, column - 1))
+                position.append((row + 1, column))
+                return position
+            if row > self.rows - 2:
+                position.append((row - 1, column - 1))
+                position.append((row - 1, column))
+                position.append((row - 1, column + 1))
+                position.append((row, column - 1))
+                position.append((row, column + 1))
+                return position
+            position.append((row - 1, column - 1))
+            position.append((row - 1, column))
+            position.append((row - 1, column + 1))
+            position.append((row, column - 1))
+            position.append((row, column + 1))
+            position.append((row + 1, column - 1))
+            position.append((row + 1, column))
+            position.append((row + 1, column + 1))
+            return position
 
 
 class AgentModel(Forest):
     
     def __init__(self, initmode):
+        self.retardant = 100
         super().__init__(initmode)
         self.memory = np.zeros(self.number_agents)
 
@@ -278,12 +371,14 @@ class AgentModel(Forest):
         lowest = 1000
         next_row = row
         next_col = column
-        position = self.get_possible_moves(row, column)
-        for neighbor_row, neighbor_col in position:
+        possible_moves = self.get_possible_moves(row, column)
+        for neighbor_row, neighbor_col in possible_moves:
             if self.mode == "Haksar":
                 cost = self.calc_cost_haksar(neighbor_row, neighbor_col, agent_index)
-            elif self.mode == "Heuristik":
-                cost = self.calc_cost_function(neighbor_row, neighbor_col)
+            elif self.mode == "Heuristic":
+                cost = self.calc_cost_heuristic(neighbor_row, neighbor_col)
+            elif self.mode == "user":
+                cost = self.calc_cost_user(neighbor_row, neighbor_col)
             else:
                 print("Agent Mode unknown")
                 pass
@@ -293,7 +388,12 @@ class AgentModel(Forest):
                 next_col = neighbor_col
         self.agents[agent_index] = (next_row, next_col)
 
-    def calc_cost_function(self, row, column):
+    def move_neu(self, agent_index):
+        if self.mode == "Haksar":
+            (next_row, next_col) = self.move_Haksar()
+        self.agents[agent_index] = (next_row, next_col)
+
+    def calc_cost_heuristic(self, row, column):
         if (row, column) in self.agents:
             return 1001
         if self.forest[row, column] == 2:
@@ -323,6 +423,11 @@ class AgentModel(Forest):
             return euclidean_distance(row, column, self.source_row, self.source_column)
         return euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
 
+    def calc_cost_user(self, row, column):
+        # user defined strategie finding algorithm goes here.
+        # return the cost for specific neighbor position (row, column)
+        return 1
+
     def apply_control_actions(self, row, col):
         if self.forest[row, col] == 2:
             self.actions[row, col] += 1
@@ -344,7 +449,6 @@ class AgentModel(Forest):
 ## TODO ##
 apply actions -> tree gets extinguished and can't ignite neighbor trees anymore. Currently it is extinguished after igniting the neighbors
 restructure code and rely on clean code! (for master branch)
-option to simulate without GUI. Live Terminal Output and log file
 Wind und Fire spreading
 optimize the way to distinguish between different modes: methods, that call the different methods based on the mode
 '''
