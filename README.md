@@ -8,7 +8,8 @@
 This tool is highly configurable, simplest by adapting parameters in the included 'config.yaml' file. After configuring the tool to your desire just run the 'main.py' script with the python 3 interpreter:
 ```
 git clone https://github.com/MarvinS23/ForFiS.git
-python main.py
+chmod +x main.py
+./main.py
 ```
 
 ---
