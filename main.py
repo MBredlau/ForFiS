@@ -5,7 +5,7 @@ Created on Wed Feb 24 20:28:43 2021
 
 @author: marvin
 """
-
+import numpy as np
 import Forest
 import time
 import matplotlib
@@ -18,6 +18,7 @@ import os
 from datetime import datetime
 matplotlib.interactive(True)
 matplotlib.use("TkAgg")
+
         
 try:
     # read standard simulation parameters from config file
@@ -28,6 +29,11 @@ try:
     alpha = config["alpha"]
     beta = config["beta"]
     delta_beta = config["delta_beta"]
+    alpha_wind = config["alpha_wind"]
+    wind_x = config["wind_x"]
+    wind_y = config["wind_y"]
+    wind = np.array([wind_x, wind_y])
+    gedächtnislos = config["gedächtnislos"]
     agents = config["agents"]
     timesteps = config["timesteps"]
     mode = config["mode"]
@@ -41,6 +47,9 @@ except:
     alpha = 7
     beta = 4
     delta_beta = 10
+    alpha_wind = 5
+    wind = ([2, 0])
+    gedächtnislos = False
     agents = 3
     timesteps = 5
     mode = "Haksar"
@@ -69,11 +78,14 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             self.number_agents = GUI.agents_slider.get()
             self.mode = mode  # Haksar or Heuristik
             self.grid = grid
+            self.gedächtnislos = gedächtnislos
             likelihood_to_ignite = GUI.alpha_slider.get()  # [0, 10] higher value leads to higher prob to ignite trees
-            self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
+            self.alpha_0 = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
             fire_persistence = GUI.beta_slider.get()  # indicator [0, 10]. higher value -> fire persists longer
             self.beta = fire_persistence * 0.1
             self.delta_beta = GUI.delta_beta_slider.get() * 0.1  # efficiency of extinguishing action
+            self.alpha_wind = alpha_wind * 0.1
+            self.wind = wind
             self.timesteps = GUI.timesteps_slider.get()
             self.delta_time = 0
             self.weights = weights
@@ -87,10 +99,12 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             self.mode = mode  # Haksar or Heuristik
             self.grid = grid
             likelihood_to_ignite = alpha  # [0, 10] higher value leads to higher prob to ignite trees
-            self.likelihood = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
+            self.alpha_0 = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
             fire_persistence = beta  # indicator [0, 10]. higher value -> fire persists longer
             self.beta = fire_persistence * 0.1
             self.delta_beta = delta_beta * 0.1  # efficiency of extinguishing action
+            self.alpha_wind = alpha_wind * 0.1
+            self.wind = wind
             self.timesteps = timesteps
             self.delta_time = 0
             self.weights = weights
