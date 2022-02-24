@@ -245,12 +245,13 @@ class GUi:
         scenario.run_sim()
 
 
-if USE_GUI:
-    GUI = GUi()
-else:
-    scenario = Simulation(None)
-    scenario.run_sim()
+if __name__ == '__main__':
+    if USE_GUI:
+        GUI = GUi()
+    else:
+        scenario = Simulation(None)
+        scenario.run_sim()
 
-if USE_LOGFILE:
-    sys.stdout.close()
-    sys.stdout = temp_stdout
+    if USE_LOGFILE:
+        sys.stdout.close()
+        sys.stdout = temp_stdout

@@ -5,8 +5,8 @@ Created on Mon Mar 22 19:03:58 2021
 
 @author: marvin
 """
-import numpy as np
 from matplotlib import colors
+import Forest_static_methods as static
 import random
 import math
 from hexalattice.hexalattice import *
@@ -14,11 +14,6 @@ import matplotlib
 
 
 matplotlib.use("TkAgg")
-
-
-# static methods
-def euclidean_distance(row1, col1, row2, col2):
-    return math.sqrt((row1 - row2) ** 2 + (col1 - col2) ** 2)
 
 
 # Forest gets initialized with a specified fire distribution
@@ -164,7 +159,8 @@ class FireModel(Forest):
                         else:
                             test_vector = np.array([1, 1])
                             product_alpha = 1
-                            for neighbor in positions:
+                            for (neighbor_x, neighbor_y) in positions:
+                                test_vector = static.vector(neighbor=np.array([neighbor_x, neighbor_y]), current_position=np.array([row, column]), grid = self.grid)
                                 product_alpha *= (self.alpha_0 * np.linalg.norm(self.wind)/(1-(1-self.alpha_0/self.alpha_wind)*np.dot(self.wind, test_vector)))**fire_neighbors#self.vector)) ** fire_neighbors... vector kriegt neighbors
                             self.prob_transit[row, column] += 1 - product_alpha
                     else:
@@ -334,13 +330,13 @@ class AgentModel(Forest):
             return 1001
         if self.forest[row, column] == 2:
             return 0
-        return euclidean_distance(row, column, self.source_row, self.source_column)
+        return static.euclidean_distance(row, column, self.source_row, self.source_column)
 
     def calc_cost_haksar(self, row, column, agent_index):
         if (row, column) in self.agents:  # avoid place of other agents
             return 1001
         if not self.memory[agent_index]:  # if no fire seen, go to fire source
-            return euclidean_distance(row, column, self.source_row, self.source_column)
+            return static.euclidean_distance(row, column, self.source_row, self.source_column)
         (base_row, base_col) = self.agents[agent_index]
         position = np.array([base_row, base_col])
         rotation_vector = (self.source_row, self.source_column) - position
@@ -348,7 +344,7 @@ class AgentModel(Forest):
         if norm != 0:
             rotation_vector = rotation_vector / norm
         rotation_vector = np.array([- rotation_vector[1], rotation_vector[0]])
-        if euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.sqrt(2) and euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
+        if static.euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.sqrt(2) and static.euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
             if self.forest[row, column] == 2:  # if sees fire to the "left", go there
                 return 0
             if self.forest[row, column] == 3:  # if burnt go there, but less important than fire. And got away from source to reach fire front again
@@ -356,8 +352,8 @@ class AgentModel(Forest):
         positions = self.get_neighbor_indices(row, column)
         fire_neighbors = self.count_trees_on_fire(positions)
         if not fire_neighbors:
-            return euclidean_distance(row, column, self.source_row, self.source_column)
-        return euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
+            return static.euclidean_distance(row, column, self.source_row, self.source_column)
+        return static.euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
 
     def calc_cost_user(self, row, column):
         # user defined strategie finding algorithm goes here.
