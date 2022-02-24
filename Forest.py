@@ -161,7 +161,9 @@ class FireModel(Forest):
                             product_alpha = 1
                             for (neighbor_x, neighbor_y) in positions:
                                 test_vector = static.vector(neighbor=np.array([neighbor_x, neighbor_y]), current_position=np.array([row, column]), grid = self.grid)
-                                product_alpha *= (self.alpha_0 * np.linalg.norm(self.wind)/(1-(1-self.alpha_0/self.alpha_wind)*np.dot(self.wind, test_vector)))**fire_neighbors#self.vector)) ** fire_neighbors... vector kriegt neighbors
+                                product_alpha *= self.alpha_0 * np.linalg.norm(self.wind)/(1-(1-self.alpha_0/self.alpha_wind)*np.dot(self.wind, test_vector))  #self.vector)) ** fire_neighbors... vector kriegt neighbors
+                            print("Hallo")
+                            self.prob_transit[row, column] += 1 - product_alpha
                             self.prob_transit[row, column] += 1 - product_alpha
                     else:
                         self.prob_transit[row, column] = 0

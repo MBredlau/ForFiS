@@ -3,9 +3,9 @@ size: 42
 alpha: 7
 beta: 7
 delta_beta: 10
-alpha_wind: 5
-wind_x: 10
-wind_y: 0
+alpha_wind: 10
+wind_x: 0.7
+wind_y: 0.1
 gedächtnislos: true
 # simulation parameters
 timesteps: 2  # 0 for full simulation

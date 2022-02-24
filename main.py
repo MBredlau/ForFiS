@@ -47,7 +47,7 @@ except:
     alpha = 7
     beta = 4
     delta_beta = 10
-    alpha_wind = 5
+    alpha_wind = 10
     wind = ([2, 0])
     gedächtnislos = False
     agents = 3
