@@ -7,6 +7,7 @@ Created on Mon Mar 22 19:03:58 2021
 """
 from matplotlib import colors
 import Forest_static_methods as static
+import user_strategy as user
 import random
 import math
 from hexalattice.hexalattice import *
@@ -20,7 +21,6 @@ matplotlib.use("TkAgg")
 class Forest:
 
     def __init__(self, initmode='centre'):
-        # self.forest = np.empty((rows, columns)), dtype=object)
         self.forest = np.zeros((self.rows, self.columns))
         self.forest_new = np.zeros((self.rows, self.columns))
         if self.number_agents:
@@ -44,20 +44,6 @@ class Forest:
         for i in range(0, self.rows):
             for j in range(0, self.columns):
                 rand_state = random.randint(1, 3)
-                """
-                self.num_healthy = 0
-                self.num_fire = 0
-                self.num_burnt = 0
-                if rand_state == 1:
-                    state = "Healthy"
-                    self.num_healthy += 1
-                if rand_state == 2:
-                    state = 'On Fire'
-                    self.num_fire += 1
-                if rand_state == 3:
-                    state = 'Burnt'
-                    self.num_burnt += 1
-                    """
                 self.forest[i, j] = rand_state
         
     def init_centre(self):
@@ -91,7 +77,7 @@ class Forest:
         cmap = colors.ListedColormap(['white', 'green', 'red', 'black'])
         bounds = [-1, 0.9, 1.9, 2.9, 4]
         norm = colors.BoundaryNorm(bounds, cmap.N)
-        self.a.imshow(self.forest[:, :], interpolation='nearest', cmap=cmap, norm=norm)  # origin = 'higher'
+        self.a.imshow(self.forest[:, :], interpolation='nearest', cmap=cmap, norm=norm)
         self.fig.canvas.draw()
 
     def plot_hexagonal(self):
@@ -110,7 +96,7 @@ class Forest:
         for i in range(len(forest)):
             for j in range(len(forest[0])):
                 if self.number_agents:
-                    if (i, j) in self.agents:  # if agent is here (regardless of action)
+                    if (i, j) in self.agents:
                         color[i * self.columns + j, :] = [0, 0, 1]  # blue
                         continue
                 if 1.1 > forest[i][j] > 0.9:
@@ -157,13 +143,11 @@ class FireModel(Forest):
                         if np.linalg.norm(self.wind) == 0:
                             self.prob_transit[row, column] += 1 - self.alpha_0 ** fire_neighbors
                         else:
-                            test_vector = np.array([1, 1])
+                            neighbor_vector = np.array([1, 1])
                             product_alpha = 1
                             for (neighbor_x, neighbor_y) in positions:
-                                test_vector = static.vector(neighbor=np.array([neighbor_x, neighbor_y]), current_position=np.array([row, column]), grid = self.grid)
-                                product_alpha *= self.alpha_0 * np.linalg.norm(self.wind)/(1-(1-self.alpha_0/self.alpha_wind)*np.dot(self.wind, test_vector))  #self.vector)) ** fire_neighbors... vector kriegt neighbors
-                            print("Hallo")
-                            self.prob_transit[row, column] += 1 - product_alpha
+                                neighbor_vector = static.vector(neighbor=np.array([neighbor_x, neighbor_y]), current_position=np.array([row, column]), grid=self.grid)
+                                product_alpha *= self.alpha_0 * np.linalg.norm(self.wind)/(1-(1-self.alpha_0/self.alpha_wind)*np.dot(self.wind, neighbor_vector))
                             self.prob_transit[row, column] += 1 - product_alpha
                     else:
                         self.prob_transit[row, column] = 0
@@ -180,7 +164,7 @@ class FireModel(Forest):
                             self.forest_new[row, column] += 1
                     self.prob_transit[row, column] = 0
         self.forest[:] = self.forest_new[:]
-        if self.gedächtnislos == True:
+        if self.memoryless == True:
             self.prob_transit[:] = 0
 
     def count_trees_on_fire(self, positions):
@@ -312,7 +296,7 @@ class AgentModel(Forest):
             elif self.mode == "Heuristic":
                 cost = self.calc_cost_heuristic(neighbor_row, neighbor_col)
             elif self.mode == "user":
-                cost = self.calc_cost_user(neighbor_row, neighbor_col)
+                cost = user.calc_cost_user(neighbor_row, neighbor_col)
             else:
                 print("Agent Mode unknown")
                 pass
@@ -320,11 +304,6 @@ class AgentModel(Forest):
                 lowest = cost
                 next_row = neighbor_row
                 next_col = neighbor_col
-        self.agents[agent_index] = (next_row, next_col)
-
-    def move_neu(self, agent_index):
-        if self.mode == "Haksar":
-            (next_row, next_col) = self.move_Haksar()
         self.agents[agent_index] = (next_row, next_col)
 
     def calc_cost_heuristic(self, row, column):
@@ -347,20 +326,15 @@ class AgentModel(Forest):
             rotation_vector = rotation_vector / norm
         rotation_vector = np.array([- rotation_vector[1], rotation_vector[0]])
         if static.euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.sqrt(2) and static.euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
-            if self.forest[row, column] == 2:  # if sees fire to the "left", go there
+            if self.forest[row, column] == 2:
                 return 0
-            if self.forest[row, column] == 3:  # if burnt go there, but less important than fire. And got away from source to reach fire front again
+            if self.forest[row, column] == 3:
                 return 0.1
         positions = self.get_neighbor_indices(row, column)
         fire_neighbors = self.count_trees_on_fire(positions)
         if not fire_neighbors:
             return static.euclidean_distance(row, column, self.source_row, self.source_column)
         return static.euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
-
-    def calc_cost_user(self, row, column):
-        # user defined strategie finding algorithm goes here.
-        # return the cost for specific neighbor position (row, column)
-        return 1
 
     def apply_control_actions(self, row, col):
         if self.forest[row, col] == 2:
@@ -386,10 +360,3 @@ class AgentModel(Forest):
             self.apply_control_actions(row, column)
             agent_index += 1
 
-
-'''
-## TODO ##
-restructure code and rely on clean code! (for master branch)
-Wind und Fire spreading
-optimize the way to distinguish between different modes: methods, that call the different methods based on the mode
-'''

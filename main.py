@@ -10,7 +10,7 @@ import Forest
 import time
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)  # , NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
 import tkinter as tk
 import yaml
 import sys
@@ -33,7 +33,7 @@ try:
     wind_x = config["wind_x"]
     wind_y = config["wind_y"]
     wind = np.array([wind_x, wind_y])
-    gedächtnislos = config["gedächtnislos"]
+    memoryless = config["memoryless"]
     agents = config["agents"]
     timesteps = config["timesteps"]
     mode = config["mode"]
@@ -49,7 +49,7 @@ except:
     delta_beta = 10
     alpha_wind = 10
     wind = ([2, 0])
-    gedächtnislos = False
+    memoryless = False
     agents = 3
     timesteps = 5
     mode = "Haksar"
@@ -66,24 +66,22 @@ if USE_LOGFILE:
     completeName = os.path.join('./logfiles', filename)
     sys.stdout = open(completeName + ".txt", "w")
 
-# step = 1
-
 
 class Simulation(Forest.FireModel, Forest.AgentModel):
 
     def __init__(self, GUI):
         if USE_GUI:
-            self.columns = GUI.size_slider.get()  # should both be odd for low numbers. Looks awful otherwise
+            self.columns = GUI.size_slider.get()  # should both be odd for low numbers. Looks bad otherwise
             self.rows = self.columns
             self.number_agents = GUI.agents_slider.get()
-            self.mode = mode  # Haksar or Heuristik
+            self.mode = mode
             self.grid = grid
-            self.gedächtnislos = gedächtnislos
-            likelihood_to_ignite = GUI.alpha_slider.get()  # [0, 10] higher value leads to higher prob to ignite trees
-            self.alpha_0 = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
-            fire_persistence = GUI.beta_slider.get()  # indicator [0, 10]. higher value -> fire persists longer
+            self.memoryless = memoryless
+            likelihood_to_ignite = GUI.alpha_slider.get()
+            self.alpha_0 = 1 - likelihood_to_ignite * 0.1
+            fire_persistence = GUI.beta_slider.get()
             self.beta = fire_persistence * 0.1
-            self.delta_beta = GUI.delta_beta_slider.get() * 0.1  # efficiency of extinguishing action
+            self.delta_beta = GUI.delta_beta_slider.get() * 0.1
             self.alpha_wind = alpha_wind * 0.1
             self.wind = wind
             self.timesteps = GUI.timesteps_slider.get()
@@ -93,16 +91,16 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             self.a = GUI.a
             fire_source = 'centre'  # init random or centre
         else:
-            self.columns = size  # should both be odd for low numbers. Looks awful otherwise
+            self.columns = size  # should both be odd for low numbers. Looks bad otherwise
             self.rows = self.columns
             self.number_agents = agents
-            self.mode = mode  # Haksar or Heuristik
+            self.mode = mode
             self.grid = grid
-            likelihood_to_ignite = alpha  # [0, 10] higher value leads to higher prob to ignite trees
-            self.alpha_0 = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
-            fire_persistence = beta  # indicator [0, 10]. higher value -> fire persists longer
+            likelihood_to_ignite = alpha
+            self.alpha_0 = 1 - likelihood_to_ignite * 0.1
+            fire_persistence = beta
             self.beta = fire_persistence * 0.1
-            self.delta_beta = delta_beta * 0.1  # efficiency of extinguishing action
+            self.delta_beta = delta_beta * 0.1
             self.alpha_wind = alpha_wind * 0.1
             self.wind = wind
             self.timesteps = timesteps
@@ -130,7 +128,7 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
         step = 1
         finished = False
         if timesteps:
-            for i in range(0, self.timesteps * (1 + (self.number_agents > 0) * 5)):
+            for i in range(0, self.timesteps):
                 print("step:", step)
                 finished = self.simulate()
                 step += 1
@@ -228,8 +226,7 @@ class GUi:
 
         scenario = Simulation(self)
         self.canvas = FigureCanvasTkAgg(scenario.fig, master=self.bottom_frame)
-        #self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.TOP)#, fill=tk.BOTH)#, expand=1)
+        self.canvas.get_tk_widget().pack(side=tk.TOP)
 
         self.start_button = tk.Button(self.bottom_frame, text="Start", command=self.start_simulation)
         self.start_button.pack()
