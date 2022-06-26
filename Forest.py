@@ -359,3 +359,4 @@ class AgentModel(Forest):
             self.memorize(row, column, agent_index)
             self.apply_control_actions(row, column)
             agent_index += 1
+
