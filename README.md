@@ -21,8 +21,7 @@ Please cite ForFiS if you use it in your work. Here is a suitable BibTeX entry:
 @ARTICLE{Simon:ForFiS,
   author  = {Marvin Bredlau, Alexander Weber and Alexander Knoll},
   title   = {FORFIS: A forest fire firefighting simulation tool for education and research},
-  journal = {???},
+  journal = {Journal of open research software},
   year    = {2022},
-  pages   = {???}
 }
 ```
