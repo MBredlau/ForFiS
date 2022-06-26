@@ -6,13 +6,13 @@ delta_beta: 10
 alpha_wind: 10
 wind_x: 0.7
 wind_y: 0.1
-gedächtnislos: true
+memoryless: true
 # simulation parameters
 timesteps: 2  # 0 for full simulation
 agents: 0
 # general setup
 gui: Yes
-mode: Haksar  # Haksar, Heuristic or user (for user defined algorithm)
+mode: user  # Haksar, Heuristic or user (for user defined algorithm)
 logfile: No
 grid: hexagonal # hexagonal or rectangular
 # success metric weights
