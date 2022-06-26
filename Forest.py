@@ -5,18 +5,15 @@ Created on Mon Mar 22 19:03:58 2021
 
 @author: marvin
 """
-import numpy as np
 from matplotlib import colors
+import Forest_static_methods as static
 import random
 import math
 from hexalattice.hexalattice import *
 import matplotlib
+
+
 matplotlib.use("TkAgg")
-
-
-# static methods
-def euclidean_distance(row1, col1, row2, col2):
-    return math.sqrt((row1 - row2) ** 2 + (col1 - col2) ** 2)
 
 
 # Forest gets initialized with a specified fire distribution
@@ -157,11 +154,21 @@ class FireModel(Forest):
                     positions = self.get_neighbor_indices(row, column)
                     fire_neighbors = self.count_trees_on_fire(positions)
                     if fire_neighbors:
-                        self.prob_transit[row, column] += 1 - self.likelihood ** fire_neighbors
+                        if np.linalg.norm(self.wind) == 0:
+                            self.prob_transit[row, column] += 1 - self.alpha_0 ** fire_neighbors
+                        else:
+                            test_vector = np.array([1, 1])
+                            product_alpha = 1
+                            for (neighbor_x, neighbor_y) in positions:
+                                test_vector = static.vector(neighbor=np.array([neighbor_x, neighbor_y]), current_position=np.array([row, column]), grid = self.grid)
+                                product_alpha *= self.alpha_0 * np.linalg.norm(self.wind)/(1-(1-self.alpha_0/self.alpha_wind)*np.dot(self.wind, test_vector))  #self.vector)) ** fire_neighbors... vector kriegt neighbors
+                            print("Hallo")
+                            self.prob_transit[row, column] += 1 - product_alpha
+                            self.prob_transit[row, column] += 1 - product_alpha
                     else:
                         self.prob_transit[row, column] = 0
                 if self.forest[row, column] == 2:  # on fire
-                    self.prob_transit[row, column] += 1 - self.beta + self.actions[row, column] * self.delta_beta
+                    self.prob_transit[row, column] += self.beta
                 prob = random.randint(0, 100)
                 if (self.prob_transit[row, column] * 100) > prob:
                     if not self.number_agents:
@@ -173,6 +180,8 @@ class FireModel(Forest):
                             self.forest_new[row, column] += 1
                     self.prob_transit[row, column] = 0
         self.forest[:] = self.forest_new[:]
+        if self.gedächtnislos == True:
+            self.prob_transit[:] = 0
 
     def count_trees_on_fire(self, positions):
         trees_on_fire = 0
@@ -282,81 +291,6 @@ class FireModel(Forest):
         return position
 
 
-#class Hexagon(Forest):
-class Rectangle(Forest):
-    '''
-    def get_number_on_fire_rectangular(self, row, column):
-        if column == 0 and row == 0:
-            return np.count_nonzero(self.forest[row: row + 2, column: column + 2] == 2)
-        if column == 0:
-            return np.count_nonzero(self.forest[row - 1: row + 2, column: column + 2] == 2)
-        if row == 0:
-            return np.count_nonzero(self.forest[row: row + 2, column - 1: column + 2] == 2)
-        return np.count_nonzero(self.forest[row - 1: row + 2, column - 1: column + 2] == 2)
-    '''
-
-    def get_neighbor_indices(self, row, column):
-        position = []
-        if self.grid == "rectangular":
-            if column == 0 and row == 0:
-                position.append((row, column + 1))
-                position.append((row + 1, column))
-                position.append((row + 1, column + 1))
-                return position
-            if column == 0:
-                if row > self.rows - 2:
-                    position.append((row - 1, column))
-                    position.append((row - 1, column + 1))
-                    position.append((row, column + 1))
-                    return position
-                position.append((row - 1, column))
-                position.append((row - 1, column + 1))
-                position.append((row, column + 1))
-                position.append((row + 1, column))
-                position.append((row + 1, column + 1))
-                return position
-            if row == 0:
-                if column > self.columns - 2:
-                    position.append((row, column - 1))
-                    position.append((row + 1, column - 1))
-                    position.append((row + 1, column))
-                    return position
-                position.append((row, column - 1))
-                position.append((row, column + 1))
-                position.append((row + 1, column - 1))
-                position.append((row + 1, column))
-                position.append((row + 1, column + 1))
-                return position
-            if row > self.rows - 2 and column > self.columns - 2:
-                position.append((row - 1, column - 1))
-                position.append((row - 1, column))
-                position.append((row, column - 1))
-                return position
-            if column > self.columns - 2:
-                position.append((row - 1, column - 1))
-                position.append((row - 1, column))
-                position.append((row, column - 1))
-                position.append((row + 1, column - 1))
-                position.append((row + 1, column))
-                return position
-            if row > self.rows - 2:
-                position.append((row - 1, column - 1))
-                position.append((row - 1, column))
-                position.append((row - 1, column + 1))
-                position.append((row, column - 1))
-                position.append((row, column + 1))
-                return position
-            position.append((row - 1, column - 1))
-            position.append((row - 1, column))
-            position.append((row - 1, column + 1))
-            position.append((row, column - 1))
-            position.append((row, column + 1))
-            position.append((row + 1, column - 1))
-            position.append((row + 1, column))
-            position.append((row + 1, column + 1))
-            return position
-
-
 class AgentModel(Forest):
     
     def __init__(self, initmode):
@@ -398,13 +332,13 @@ class AgentModel(Forest):
             return 1001
         if self.forest[row, column] == 2:
             return 0
-        return euclidean_distance(row, column, self.source_row, self.source_column)
+        return static.euclidean_distance(row, column, self.source_row, self.source_column)
 
     def calc_cost_haksar(self, row, column, agent_index):
         if (row, column) in self.agents:  # avoid place of other agents
             return 1001
         if not self.memory[agent_index]:  # if no fire seen, go to fire source
-            return euclidean_distance(row, column, self.source_row, self.source_column)
+            return static.euclidean_distance(row, column, self.source_row, self.source_column)
         (base_row, base_col) = self.agents[agent_index]
         position = np.array([base_row, base_col])
         rotation_vector = (self.source_row, self.source_column) - position
@@ -412,7 +346,7 @@ class AgentModel(Forest):
         if norm != 0:
             rotation_vector = rotation_vector / norm
         rotation_vector = np.array([- rotation_vector[1], rotation_vector[0]])
-        if euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.sqrt(2) and euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
+        if static.euclidean_distance(row - base_row, column - base_col, - rotation_vector[1], rotation_vector[0]) <= math.sqrt(2) and static.euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1]) <= math.sqrt(2):
             if self.forest[row, column] == 2:  # if sees fire to the "left", go there
                 return 0
             if self.forest[row, column] == 3:  # if burnt go there, but less important than fire. And got away from source to reach fire front again
@@ -420,8 +354,8 @@ class AgentModel(Forest):
         positions = self.get_neighbor_indices(row, column)
         fire_neighbors = self.count_trees_on_fire(positions)
         if not fire_neighbors:
-            return euclidean_distance(row, column, self.source_row, self.source_column)
-        return euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
+            return static.euclidean_distance(row, column, self.source_row, self.source_column)
+        return static.euclidean_distance(row - base_row, column - base_col, rotation_vector[0], rotation_vector[1])
 
     def calc_cost_user(self, row, column):
         # user defined strategie finding algorithm goes here.
@@ -430,7 +364,15 @@ class AgentModel(Forest):
 
     def apply_control_actions(self, row, col):
         if self.forest[row, col] == 2:
-            self.actions[row, col] += 1
+            self.actions[row, col] = 1
+            self.agent_transition(row, col)
+        self.actions[row, col] = 0
+
+    def agent_transition(self, row, col):
+        prob_ext = self.actions[row, col] * self.delta_beta
+        prob = random.randint(0, 100)
+        if (prob_ext * 100) > prob:
+            self.forest[row, col] = 4
 
     def memorize(self, row, col, agent_index):
         if self.forest[row, col] == 2 or self.forest[row, col] == 3:
@@ -439,15 +381,14 @@ class AgentModel(Forest):
     def act(self):
         agent_index = 0
         for (row, column) in self.agents:
-            self.apply_control_actions(row, column)
-            self.memorize(row, column, agent_index)
             self.move(row, column, agent_index)
+            self.memorize(row, column, agent_index)
+            self.apply_control_actions(row, column)
             agent_index += 1
 
 
 '''
 ## TODO ##
-apply actions -> tree gets extinguished and can't ignite neighbor trees anymore. Currently it is extinguished after igniting the neighbors
 restructure code and rely on clean code! (for master branch)
 Wind und Fire spreading
 optimize the way to distinguish between different modes: methods, that call the different methods based on the mode
