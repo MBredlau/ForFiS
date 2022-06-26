@@ -41,6 +41,7 @@ try:
     weights = config["healthy"], config["extinguished"], config["time"]
     USE_GUI = config["gui"]
     USE_LOGFILE = config["logfile"]
+    PLOT_SUCCESS = config["plot_success"]
     print("Loaded config file")
 except:
     size = 22
@@ -57,6 +58,7 @@ except:
     weights = 0.6, 0.2, 0.2
     USE_GUI = True
     USE_LOGFILE = False
+    PLOT_SUCCESS = True
     print("Parameters loaded from main.py. If you want to use the config file, make sure it is named correctly and "
           "located in the right path")
 
@@ -98,6 +100,7 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             self.number_agents = agents
             self.mode = mode  # Haksar or Heuristik
             self.grid = grid
+            self.gedächtnislos = gedächtnislos
             likelihood_to_ignite = alpha  # [0, 10] higher value leads to higher prob to ignite trees
             self.alpha_0 = 1 - likelihood_to_ignite * 0.1  # higher likelihood leads to lower probability to ignite trees
             fire_persistence = beta  # indicator [0, 10]. higher value -> fire persists longer
@@ -109,6 +112,12 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
             self.delta_time = 0
             self.weights = weights
             fire_source = 'centre'  # init random or centre
+        if PLOT_SUCCESS:
+            self.stats_healthy = ([])
+            self.stats_afire = ([])
+            self.stats_burnt = ([])
+            self.stats_extinguished = ([])
+            self.stats_step = ([])
         super().__init__(fire_source)
 
     def simulate(self):
@@ -120,47 +129,45 @@ class Simulation(Forest.FireModel, Forest.AgentModel):
                 if USE_GUI:
                     self.plot(self.grid)
         else:
-            self.plot(self.grid)
-        healthy, onfire, burnt, extinguished = self.calc_stats()
-        print("trees healthy:", healthy, "on fire:", onfire, "burnt:", burnt, "extinguished:", extinguished)
-        return onfire == 0
+            if USE_GUI:
+                self.plot(self.grid)
+        healthy, afire, burnt, extinguished = self.calc_stats()
+        if PLOT_SUCCESS:
+            self.stats_healthy.append(healthy)
+            self.stats_afire.append(afire)
+            self.stats_burnt.append(burnt)
+            self.stats_extinguished.append(extinguished)
+            self.stats_step.append(step)
+        print("trees healthy:", healthy, "on fire:", afire, "burnt:", burnt, "extinguished:", extinguished)
+        return afire == 0
 
     def run_sim(self):
         global step
         step = 1
         finished = False
-        if timesteps:
-            for i in range(0, self.timesteps * (1 + (self.number_agents > 0) * 5)):
-                print("step:", step)
-                finished = self.simulate()
-                step += 1
-                if USE_GUI:
-                    if grid == "rectangular":
-                        self.plot_rectangular()
-                    else:
-                        self.plot(self.grid)
-                if finished:
+        while not finished:
+            print("step:", step)
+            finished = self.simulate()
+            step += 1
+            if USE_GUI:
+                self.plot(self.grid)
+            if timesteps:
+                #if step == 40:
+                    #break
+                if step - 1 >= self.timesteps * (1 + (self.number_agents > 0) * 5):
                     break
-        else:
-            while not finished:
-                print("step:", step)
-                finished = self.simulate()
-                step += 1
-                if USE_GUI:
-                    if grid == "rectangular":
-                        self.plot_rectangular()
-                    else:
-                        self.plot(self.grid)
+
         print("Simulation finished!")
         print("Overall statistics:")
         print("Chosen strategie finding algorithm:", mode)
         print("Time steps needed:", step)
-        healthy, onfire, burnt, extinguished = self.calc_stats()
+        healthy, afire, burnt, extinguished = self.calc_stats()
         print("Trees remained healthy(%):", healthy * 100)
         print("Extinguished Trees(%):", extinguished * 100)
         print("Burnt Trees(%):", burnt * 100)
         success = self.calc_metric(step)
         print("success metric value:", success)
+
 
 
 class GUi:
@@ -228,8 +235,7 @@ class GUi:
 
         scenario = Simulation(self)
         self.canvas = FigureCanvasTkAgg(scenario.fig, master=self.bottom_frame)
-        #self.canvas.draw()
-        self.canvas.get_tk_widget().pack(side=tk.TOP)#, fill=tk.BOTH)#, expand=1)
+        self.canvas.get_tk_widget().pack(side=tk.TOP)
 
         self.start_button = tk.Button(self.bottom_frame, text="Start", command=self.start_simulation)
         self.start_button.pack()
@@ -238,10 +244,7 @@ class GUi:
 
     def start_simulation(self):
         scenario = Simulation(self)
-        if scenario.grid == "rectangular":
-            scenario.plot_rectangular()
-        else:
-            scenario.plot(scenario.grid)
+        scenario.plot(scenario.grid)
         scenario.run_sim()
 
 
@@ -249,8 +252,53 @@ if __name__ == '__main__':
     if USE_GUI:
         GUI = GUi()
     else:
-        scenario = Simulation(None)
-        scenario.run_sim()
+        alpha_vals = (0.6, 0.7, 0.8, 0.9)
+        agents_vals = (7, 10, 13, 14, 17, 20)
+        stats_healthy = ([])
+        stats_afire = ([])
+        stats_burnt = ([])
+        stats_extinguished = ([])
+        stats_step = ([])
+        for i in range(0, len(agents_vals)):
+            scenario = Simulation(None)
+            #scenario.alpha_0 = alpha_vals[i]
+            scenario.number_agents = agents_vals[i]
+            scenario.run_sim()
+            #stats_healthy.extend(scenario.stats_healthy)
+            #stats_afire.extend(scenario.stats_afire)
+            #stats_burnt.extend(scenario.stats_burnt)
+            #stats_extinguished.extend(scenario.stats_extinguished)
+            #stats_step.extend(scenario.stats_step)
+            stats_healthy.append(scenario.stats_healthy)
+            stats_afire.append(scenario.stats_afire)
+            stats_burnt.append(scenario.stats_burnt)
+            stats_extinguished.append(scenario.stats_extinguished)
+            stats_step.append(scenario.stats_step)
+        if PLOT_SUCCESS:
+            fig = plt.figure()
+            plt.xlabel("time step")
+            plt.ylabel("Fraction of burnt trees")
+            liste = [1]*30
+
+            #plt.plot(stats_step, stats_healthy, label="healthy")
+            plt.plot(stats_step[0], stats_burnt[0], label="7")
+            plt.plot(stats_step[1], stats_burnt[1], label="10")
+            plt.plot(stats_step[2], stats_burnt[2], label="13")
+            plt.plot(stats_step[3], stats_burnt[3], label="14")
+            plt.plot(stats_step[4], stats_burnt[4], label="17")
+            plt.plot(stats_step[5], stats_burnt[5], label="20")
+            #plt.plot(stats_step[6], stats_burnt[6], label="16")
+            #plt.plot(stats_step[7], stats_burnt[7], label="19")
+            #plt.plot(stats_step[8], stats_burnt[8], label="20")
+
+            #plt.plot(stats_step, stats_extinguished, label="extinguished")
+            #plt.plot(stats_step[30:59], stats_healthy[30:59], label="0.7")
+            #plt.plot(stats_step[60:89], stats_healthy[60:89], label="0.8")
+            #plt.plot(stats_step[90:119], stats_healthy[90:119], label="0.9")
+            #plt.plot(stats_step[0:29], liste[0:29], label="0.9")
+            plt.legend()
+            fig.tight_layout()
+            fig.savefig('Haksar_all.png')
 
     if USE_LOGFILE:
         sys.stdout.close()
