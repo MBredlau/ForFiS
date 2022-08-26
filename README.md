@@ -18,7 +18,7 @@ Dependencies (indicated versions are approved. May work with lower versions as w
 ---
 Please cite ForFiS if you use it in your work. Here is a suitable BibTeX entry:
 ```
-@ARTICLE{Simon:ForFiS,
+@ARTICLE{Bredlau:ForFiS,
   author  = {Marvin Bredlau, Alexander Weber and Alexander Knoll},
   title   = {FORFIS: A forest fire firefighting simulation tool for education and research},
   journal = {Journal of open research software},
