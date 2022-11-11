@@ -6,6 +6,7 @@
 
 **ForFiS** is a Python tool to simulate forest fires along with firefighting agents with an interface for strategie finding algorithms. 
 This tool is highly configurable, simplest by adapting parameters in the included `config.yaml` file. After configuring the tool to your desire just run the `main.py` script with the python 3 interpreter.
+For detailed informations about the underlying mathematical models and the integrated heuristic strategies please have a look at our paper (Status: Submitted), as soon as it is published.
 
 ---
 Dependencies (indicated versions are approved. May work with lower versions as well):
@@ -21,7 +22,7 @@ Please cite ForFiS if you use it in your work. Here is a suitable BibTeX entry:
 @ARTICLE{Bredlau:ForFiS,
   author  = {Marvin Bredlau, Alexander Weber and Alexander Knoll},
   title   = {FORFIS: A forest fire firefighting simulation tool for education and research},
-  journal = {Journal of open research software},
+  journal = {}, % submitted to 'Journal of open research software'
   year    = {2022},
 }
 ```
