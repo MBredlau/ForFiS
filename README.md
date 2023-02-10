@@ -15,6 +15,7 @@ Dependencies (indicated versions are approved. May work with lower versions as w
 `pip install hexalattice`
 * matplotlib 3.3.2
 * numpy 1.19.2
+* tkinter
 
 ---
 Please cite ForFiS if you use it in your work. Here is a suitable BibTeX entry:
