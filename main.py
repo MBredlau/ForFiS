@@ -19,10 +19,12 @@ from datetime import datetime
 matplotlib.interactive(True)
 matplotlib.use("TkAgg")
 
-        
+# Enter the name of the config file here
+config_name = "config.yml"        
+
 try:
     # read standard simulation parameters from config file
-    with open("config.yml", "r") as configfile:
+    with open(config_name, "r") as configfile:
         config = yaml.load(configfile, Loader=yaml.FullLoader)
 
     size = config["size"]
