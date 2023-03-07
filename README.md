@@ -9,7 +9,7 @@ This tool is highly configurable, simplest by adapting parameters in the include
 For detailed informations about the underlying mathematical models and the integrated heuristic strategies please have a look at our paper (Status: Submitted), as soon as it is published.
 
 ---
-Dependencies (indicated versions are approved. May work with lower versions as well):
+Dependencies (indicated versions are approved. May work with different versions as well):
 * python 3.8.5
 * hexalattice-1.1.0 (https://github.com/alexkaz2/hexalattice)
 `pip install hexalattice`
@@ -23,7 +23,7 @@ Please cite ForFiS if you use it in your work. Here is a suitable BibTeX entry:
 @ARTICLE{Bredlau:ForFiS,
   author  = {Marvin Bredlau, Alexander Weber and Alexander Knoll},
   title   = {FORFIS: A forest fire firefighting simulation tool for education and research},
-  journal = {}, % submitted to 'Journal of open research software'
-  year    = {2022},
+  journal = {}, % submitted to 'Journal of Statistical Software'
+  year    = {2023},
 }
 ```
