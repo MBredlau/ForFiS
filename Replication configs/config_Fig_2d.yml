@@ -1,0 +1,21 @@
+# Forest Fire simulation parameters
+size: 42
+alpha: 7
+beta: 6
+delta_beta: 10
+alpha_wind: 10
+wind_x: -1
+wind_y: 0
+memoryless: false
+# simulation parameters
+timesteps: 16  # 0 for full simulation
+agents: 0
+# general setup
+gui: Yes
+mode: user  # Haksar, Heuristic or user (for user defined algorithm)
+logfile: No
+grid: hexagonal # hexagonal or rectangular
+# success metric weights
+healthy: 0.6
+extinguished : 0.2
+time: 0.2
